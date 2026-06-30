@@ -10,8 +10,8 @@ data class Tarea(
         get() = subtareas.size
 
     val precio: Int
-        get() = subtareas.sumOf { it.precio }
+        get() = subtareas.sumOf { it.price }
 
     val completed: Boolean
-        get() = subtareas.all { it.completada }
+        get() = subtareas.all { it.completed }
 }

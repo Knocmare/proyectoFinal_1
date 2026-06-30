@@ -34,12 +34,12 @@ import ruiz.angel.proyectofinal_1.ui.theme.VerdeFondo
 
 @Composable
 fun TaskListScreen(
-    evento: Evento,
-    onCrearEvento: () -> Unit = {},
-    onSalir: () -> Unit = {}
+    event: Evento,
+    onCreateEvent: () -> Unit = {},
+    onLeave: () -> Unit = {}
 ) {
     var tareas by remember {
-        mutableStateOf(evento.tareas)
+        mutableStateOf(event.tareas)
     }
 
     Scaffold(
@@ -51,7 +51,7 @@ fun TaskListScreen(
                     .padding(16.dp)
             ) {
                 Button(
-                    onClick = onCrearEvento,
+                    onClick = onCreateEvent,
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(52.dp),
@@ -73,10 +73,10 @@ fun TaskListScreen(
                 .padding(innerPadding)
         ) {
             UserHeader(
-                nombre = evento.nombreUsuario,
-                email = evento.emailUsuario,
-                iniciales = evento.inicialesUsuario,
-                onSalir = onSalir
+                name = event.nombreUsuario,
+                email = event.emailUsuario,
+                iniciales = event.inicialesUsuario,
+                onLeave = onLeave
             )
 
             Column(
@@ -102,21 +102,21 @@ fun TaskListScreen(
                 Spacer(modifier = Modifier.height(12.dp))
 
                 EventCard(
-                    evento = evento.copy(
+                    event = event.copy(
                         tareas = tareas
                     ),
-                    onToggleTarea = { tareaIndex ->
+                    onToggleTask = { tareaIndex ->
                         tareas = tareas.toMutableList().also { list ->
                             val tarea = list[tareaIndex]
                             list[tareaIndex] = tarea.copy(completada = !tarea.completada)
                         }
                     },
-                    onToggleSubtarea = { tareaIndex, subtareaIndex ->
+                    onToggleSubtask = { tareaIndex, subtareaIndex ->
                         tareas = tareas.toMutableList().also { list ->
                             val tarea = list[tareaIndex]
                             val subs = tarea.subtareas.toMutableList()
-                            subs[subtareaIndex] = subs[subtareaIndex].copy(completada = !subs[subtareaIndex].completada)
-                            val todasCompletas = subs.all { it.completada }
+                            subs[subtareaIndex] = subs[subtareaIndex].copy(completed = !subs[subtareaIndex].completed)
+                            val todasCompletas = subs.all { it.completed }
                             list[tareaIndex] = tarea.copy(subtareas = subs, completada = todasCompletas)
                         }
                     }
@@ -128,10 +128,10 @@ fun TaskListScreen(
 
 @Composable
 fun UserHeader(
-    nombre: String,
+    name: String,
     email: String,
     iniciales: String,
-    onSalir: () -> Unit
+    onLeave: () -> Unit
 ) {
     Box(
         modifier = Modifier
@@ -161,12 +161,12 @@ fun UserHeader(
                 }
                 Spacer(modifier = Modifier.width(12.dp))
                 Column {
-                    Text(text = nombre, color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Medium)
+                    Text(text = name, color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Medium)
                     Text(text = email, color = Color.White.copy(alpha = 0.75f), fontSize = 12.sp)
                 }
             }
             Button(
-                onClick = onSalir,
+                onClick = onLeave,
                 colors = ButtonDefaults.buttonColors(
                     containerColor = AzulClaro,
                     contentColor = Color.White
@@ -182,9 +182,9 @@ fun UserHeader(
 
 @Composable
 fun EventCard(
-    evento: Evento,
-    onToggleTarea: (Int) -> Unit,
-    onToggleSubtarea: (Int, Int) -> Unit
+    event: Evento,
+    onToggleTask: (Int) -> Unit,
+    onToggleSubtask: (Int, Int) -> Unit
 ) {
     var expandedTaskIndex by remember { mutableStateOf(-1) }
 
@@ -207,24 +207,24 @@ fun EventCard(
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = evento.nombre,
+                    text = event.nombre,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Medium,
                     modifier = Modifier.weight(1f)
                 )
-                Text(text = String.format("$%,d", evento.estimated), fontSize = 16.sp, fontWeight = FontWeight.Medium, color = Azul)
+                Text(text = String.format("$%,d", event.estimated), fontSize = 16.sp, fontWeight = FontWeight.Medium, color = Azul)
                 Text(text = " ▾", color = Azul, fontSize = 14.sp)
             }
 
             Text(
-                text = "${evento.taskCount} tareas · ${evento.taskCompletedCount} completada · ${evento.fecha}",
+                text = "${event.taskCount} tareas · ${event.taskCompletedCount} completada · ${event.fecha}",
                 fontSize = 12.sp,
                 color = Color.Gray,
                 modifier = Modifier.padding(start = 18.dp, top = 2.dp, bottom = 8.dp)
             )
 
             LinearProgressIndicator(
-                progress = { evento.taskCompletedCount.toFloat() / evento.taskCount.coerceAtLeast(1) },
+                progress = { event.taskCompletedCount.toFloat() / event.taskCount.coerceAtLeast(1) },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(5.dp)
@@ -233,7 +233,7 @@ fun EventCard(
                 trackColor = Color(0xFFE0E0E0)
             )
             Text(
-                text = "${evento.taskCompletedCount} de ${evento.taskCount} tareas",
+                text = "${event.taskCompletedCount} de ${event.taskCount} tareas",
                 fontSize = 11.sp,
                 color = Color.Gray,
                 modifier = Modifier
@@ -244,24 +244,24 @@ fun EventCard(
 
             HorizontalDivider(color = Borde, thickness = 0.5.dp)
 
-            evento.tareas.forEachIndexed { index, tarea ->
+            event.tareas.forEachIndexed { index, tarea ->
                 if (tarea.completada) {
                     TaskCompleted(
                         tarea = tarea,
-                        onClick = { onToggleTarea(index) }
+                        onClick = { onToggleTask(index) }
                     )
                 } else {
                     TaskRow(
                         tarea = tarea,
                         expandida = expandedTaskIndex == index,
-                        onClickTarea = {
+                        onClickTask = {
                             expandedTaskIndex = if (expandedTaskIndex == index) -1 else index
                         },
-                        onToggleTarea = { onToggleTarea(index) },
-                        onToggleSubtarea = { subIndex -> onToggleSubtarea(index, subIndex) }
+                        onToggleTask = { onToggleTask(index) },
+                        onToggleSubtask = { subIndex -> onToggleSubtask(index, subIndex) }
                     )
                 }
-                if (index < evento.tareas.lastIndex) {
+                if (index < event.tareas.lastIndex) {
                     HorizontalDivider(color = Borde, thickness = 0.5.dp)
                 }
             }
@@ -284,9 +284,9 @@ fun EventCard(
                     .padding(top = 12.dp),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                BudgetColumn("ESTIMADO", String.format("$%,d", evento.estimated), Azul)
-                BudgetColumn("GASTADO", String.format("$%,d", evento.spent), Azul)
-                BudgetColumn("RESTANTE", String.format("$%,d", evento.remaining), Color.Black)
+                BudgetColumn("ESTIMADO", String.format("$%,d", event.estimated), Azul)
+                BudgetColumn("GASTADO", String.format("$%,d", event.spent), Azul)
+                BudgetColumn("RESTANTE", String.format("$%,d", event.remaining), Color.Black)
             }
         }
     }
@@ -296,9 +296,9 @@ fun EventCard(
 fun TaskRow(
     tarea: Tarea,
     expandida: Boolean,
-    onClickTarea: () -> Unit,
-    onToggleTarea: () -> Unit,
-    onToggleSubtarea: (Int) -> Unit
+    onClickTask: () -> Unit,
+    onToggleTask: () -> Unit,
+    onToggleSubtask: (Int) -> Unit
 ) {
     Column {
         Row(
@@ -312,7 +312,7 @@ fun TaskRow(
                     .size(20.dp)
                     .clip(CircleShape)
                     .border(1.5.dp, Color.LightGray, CircleShape)
-                    .clickable { onToggleTarea() }
+                    .clickable { onToggleTask() }
             )
 
             Spacer(modifier = Modifier.width(10.dp))
@@ -322,7 +322,7 @@ fun TaskRow(
                 fontSize = 14.sp,
                 modifier = Modifier
                     .weight(1f)
-                    .clickable { onClickTarea() }
+                    .clickable { onClickTask() }
             )
             if (tarea.subCount > 0) {
                 Text(
@@ -331,7 +331,7 @@ fun TaskRow(
                     color = Azul,
                     modifier = Modifier
                         .padding(end = 4.dp)
-                        .clickable { onClickTarea() }
+                        .clickable { onClickTask() }
                 )
             }
             Text(text = String.format("$%,d", tarea.precio), fontSize = 14.sp, fontWeight = FontWeight.Medium, color = Azul)
@@ -348,7 +348,7 @@ fun TaskRow(
                 tarea.subtareas.forEachIndexed { i, subtarea ->
                     SubtaskRow(
                         subtarea = subtarea,
-                        onToggle = { onToggleSubtarea(i) }
+                        onToggle = { onToggleSubtask(i) }
                     )
                     if (i < tarea.subtareas.lastIndex) {
                         HorizontalDivider(color = Borde, thickness = 0.5.dp)
@@ -373,23 +373,23 @@ fun SubtaskRow(subtarea: Subtarea, onToggle: () -> Unit) {
             modifier = Modifier
                 .size(17.dp)
                 .clip(RoundedCornerShape(3.dp))
-                .background(if (subtarea.completada) Azul else Color.White)
-                .border(1.5.dp, if (subtarea.completada) Azul else Color.LightGray, RoundedCornerShape(3.dp)),
+                .background(if (subtarea.completed) Azul else Color.White)
+                .border(1.5.dp, if (subtarea.completed) Azul else Color.LightGray, RoundedCornerShape(3.dp)),
             contentAlignment = Alignment.Center
         ) {
-            if (subtarea.completada) {
+            if (subtarea.completed) {
                 Text(text = "✓", color = Color.White, fontSize = 10.sp)
             }
         }
         Spacer(modifier = Modifier.width(8.dp))
         Text(
-            text = subtarea.nombre,
+            text = subtarea.name,
             fontSize = 13.sp,
             modifier = Modifier.weight(1f),
-            color = if (subtarea.completada) Color.Gray else Color.Black,
-            textDecoration = if (subtarea.completada) TextDecoration.LineThrough else TextDecoration.None
+            color = if (subtarea.completed) Color.Gray else Color.Black,
+            textDecoration = if (subtarea.completed) TextDecoration.LineThrough else TextDecoration.None
         )
-        Text(text = String.format("$%,d", subtarea.precio), fontSize = 13.sp, color = Color.Gray)
+        Text(text = String.format("$%,d", subtarea.price), fontSize = 13.sp, color = Color.Gray)
     }
 }
 
@@ -439,7 +439,7 @@ fun BudgetColumn(label: String, valor: String, colorValor: Color) {
 @Composable
 fun TaskListScreenPreview() {
     TaskListScreen(
-        evento = Evento(
+        event = Evento(
             nombre = "Boda",
             fecha = "15 Jul 2026",
             nombreUsuario = "Joel Ruben",
@@ -450,18 +450,18 @@ fun TaskListScreenPreview() {
                     nombre = "Salón de eventos",
                     completada = false,
                     subtareas = listOf(
-                        Subtarea("Cotización de salones", 0, completada = true),
-                        Subtarea("Reserva del salón", 5000, completada = false),
-                        Subtarea("Decoración", 7000, completada = false),
+                        Subtarea("Cotización de salones", 0, completed = true),
+                        Subtarea("Reserva del salón", 5000, completed = false),
+                        Subtarea("Decoración", 7000, completed = false),
                     )
                 ),
                 Tarea("Comida", completada = false, subtareas = listOf(
-                    Subtarea("Carne Azada", 5000, completada = false)
+                    Subtarea("Carne Azada", 5000, completed = false)
                 )),
                 Tarea("Fotografía y video", completada = false),
                 Tarea("Invitaciones", completada = true, subtareas = listOf(
-                    Subtarea("Crear invitaciones", 500, completada = true),
-                    Subtarea("Entregar invitaciones", 0, completada = true)
+                    Subtarea("Crear invitaciones", 500, completed = true),
+                    Subtarea("Entregar invitaciones", 0, completed = true)
                 ))
             )
         )

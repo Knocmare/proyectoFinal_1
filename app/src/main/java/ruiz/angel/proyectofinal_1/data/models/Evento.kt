@@ -6,14 +6,14 @@ data class Evento(
     val nombreUsuario: String,
     val emailUsuario: String,
     val inicialesUsuario: String,
-    val tareas: List<Tarea>
+    val tareas: List<Tarea> = emptyList()
 ) {
     val taskCount: Int
         get() = tareas.size
 
     val taskCompletedCount: Int
         get() = tareas.count { tarea ->
-            tarea.completada || (tarea.subtareas.isNotEmpty() && tarea.subtareas.all { it.completada })
+            tarea.completada || (tarea.subtareas.isNotEmpty() && tarea.subtareas.all { it.completed })
         }
 
     val estimated: Int
@@ -21,7 +21,7 @@ data class Evento(
 
     val spent: Int
         get() = tareas.sumOf { tarea ->
-            val isCompleted = tarea.completada || (tarea.subtareas.isNotEmpty() && tarea.subtareas.all { it.completada })
+            val isCompleted = tarea.completada || (tarea.subtareas.isNotEmpty() && tarea.subtareas.all { it.completed })
             if (isCompleted) tarea.precio else 0
         }
 

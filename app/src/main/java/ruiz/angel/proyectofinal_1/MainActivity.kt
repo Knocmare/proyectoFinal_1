@@ -11,6 +11,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.tooling.preview.Preview
 import ruiz.angel.proyectofinal_1.ui.screens.LoginScreen
+import ruiz.angel.proyectofinal_1.ui.screens.PriceComparationScreen
 import ruiz.angel.proyectofinal_1.ui.screens.RegisterScreen
 import ruiz.angel.proyectofinal_1.ui.theme.ProyectoFinal_1Theme
 
@@ -26,7 +27,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-private enum class AuthScreen { Login, Register }
+private enum class AuthScreen { Login, Register, PriceComparison }
 
 @Composable
 private fun AuthFlow() {
@@ -43,7 +44,7 @@ private fun AuthFlow() {
             onEmailChange = { email = it },
             password = password,
             onPasswordChange = { password = it },
-            onLoginClick = { },
+            onLoginClick = { screen = AuthScreen.PriceComparison },
             onForgotPasswordClick = { },
             onRegisterClick = { screen = AuthScreen.Register }
         )
@@ -55,8 +56,11 @@ private fun AuthFlow() {
             password = password,
             onPasswordChange = { password = it },
             onBackClick = { screen = AuthScreen.Login },
-            onRegisterClick = {  },
+            onRegisterClick = { screen = AuthScreen.PriceComparison },
             onLoginClick = { screen = AuthScreen.Login }
+        )
+        AuthScreen.PriceComparison -> PriceComparationScreen(
+            onBackClick = { screen = AuthScreen.Login }
         )
     }
 }

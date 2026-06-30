@@ -31,3 +31,12 @@ val BorderGray = Color(0xFFD1D5DB)
 val BackgroundGray = Color(0xFFF9FAFB)
 
 val BackgroundColor = Color(0xFFF9FAFB)
+
+val Rojo = Color(0xFFDC2626)
+val RojoFondo = Color(0xFFFEE2E2)
+val NaranjaFondo = Color(0xFFFFF7ED)
+val GrisFondo = Color(0xFFF3F4F6)
+val Naranja = Color(0xFFD97706)
+val Morado = Color(0xFF7C3AED)
+val Rosa = Color(0xFFDB2777)
+val GrisOscuro = Color(0xFF374151)

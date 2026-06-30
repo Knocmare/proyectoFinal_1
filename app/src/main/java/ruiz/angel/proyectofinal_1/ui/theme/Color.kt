@@ -19,3 +19,13 @@ val FondoPantalla = Color(0xFFF5F5F5)
 val FondoTarjeta = Color.White
 val FondoSubtarea = Color(0xFFFAFAFA)
 val Borde = Color(0xFFE0E0E0)
+
+val PrimaryBlue = Color(0xFF0062A5)
+
+val LightBlueIcon = Color(0xFF2894F4)
+
+val TextGray = Color(0xFF5F6368)
+
+val BorderGray = Color(0xFFD1D5DB)
+
+val BackgroundGray = Color(0xFFF9FAFB)

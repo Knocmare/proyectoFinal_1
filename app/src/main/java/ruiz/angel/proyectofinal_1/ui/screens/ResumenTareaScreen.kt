@@ -497,32 +497,32 @@ fun EventSummaryScreenPreview() {
                     nombre = "Salón de eventos",
                     completada = false,
                     subtareas = listOf(
-                        Subtarea("Cotización de salones", 0, completada = true),
-                        Subtarea("Reserva del salón", 5000, completada = true),
-                        Subtarea("Decoración", 7000, completada = false),
+                        Subtarea("Cotización de salones", 0, completed = true),
+                        Subtarea("Reserva del salón", 5000, completed = true),
+                        Subtarea("Decoración", 7000, completed = false),
                     )
                 ),
                 Tarea(
                     nombre = "Comida",
                     completada = false,
                     subtareas = listOf(
-                        Subtarea("Carne Azada", 9500, completada = true)
+                        Subtarea("Carne Azada", 9500, completed = true)
                     )
                 ),
                 Tarea(
                     nombre = "Fotografía y video",
                     completada = false,
                     subtareas = listOf(
-                        Subtarea("Sesión de fotos", 1900, completada = true),
-                        Subtarea("Video del evento", 6600, completada = false)
+                        Subtarea("Sesión de fotos", 1900, completed = true),
+                        Subtarea("Video del evento", 6600, completed = false)
                     )
                 ),
                 Tarea(
                     nombre = "Invitaciones",
                     completada = true,
                     subtareas = listOf(
-                        Subtarea("Crear invitaciones", 500, completada = true),
-                        Subtarea("Entregar invitaciones", 2000, completada = true)
+                        Subtarea("Crear invitaciones", 500, completed = true),
+                        Subtarea("Entregar invitaciones", 2000, completed = true)
                     )
                 )
             )

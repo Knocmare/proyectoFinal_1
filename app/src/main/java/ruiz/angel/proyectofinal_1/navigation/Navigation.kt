@@ -21,7 +21,7 @@ import ruiz.angel.proyectofinal_1.ui.screens.TaskListScreen
 @Composable
 fun Navigation(innerPadding: PaddingValues) {
     val navController = rememberNavController()
-    
+
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var name by remember { mutableStateOf("") }

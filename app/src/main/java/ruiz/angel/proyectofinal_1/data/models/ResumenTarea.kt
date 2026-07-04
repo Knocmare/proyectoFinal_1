@@ -24,7 +24,7 @@ data class ResumenTarea(
         get() = if (tarea.completed) {
             tarea.precio
         } else {
-            tarea.subtareas.filter { it.completada }.sumOf { it.precio }
+            tarea.subtareas.filter { it.completed }.sumOf { it.price }
         }
 
     val porcentaje: Float

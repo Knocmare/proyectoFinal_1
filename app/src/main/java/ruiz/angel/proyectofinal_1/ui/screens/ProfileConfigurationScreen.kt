@@ -41,6 +41,7 @@ fun ProfileConfigurationScreen(
     var email by remember { mutableStateOf(email) } //usuario.email
     var password by remember { mutableStateOf("") }
     var newPassword by remember { mutableStateOf("") }
+    var confirmPassword by remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf("") }
 
     Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
@@ -112,6 +113,14 @@ fun ProfileConfigurationScreen(
                     value = newPassword,
                     onValueChange = { newPassword = it; errorMessage = "" },
                     label = { Text("Nueva Contraseña") },
+                    modifier = Modifier.fillMaxWidth().padding(5.dp, 0.dp),
+                    singleLine = true,
+                    visualTransformation = PasswordVisualTransformation()
+                )
+                OutlinedTextField(
+                    value = confirmPassword,
+                    onValueChange = { confirmPassword = it; errorMessage = "" },
+                    label = { Text("Confirmar Nueva Contraseña") },
                     modifier = Modifier.fillMaxWidth().padding(5.dp, 0.dp),
                     singleLine = true,
                     visualTransformation = PasswordVisualTransformation()

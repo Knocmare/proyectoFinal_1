@@ -11,7 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import ruiz.angel.proyectofinal_1.data.models.Evento
+import ruiz.angel.proyectofinal_1.data.models.Event
 import ruiz.angel.proyectofinal_1.ui.screens.LoginScreen
 import ruiz.angel.proyectofinal_1.ui.screens.PriceComparationScreen
 import ruiz.angel.proyectofinal_1.ui.screens.ProfileConfigurationScreen
@@ -25,7 +25,7 @@ fun Navigation(innerPadding: PaddingValues) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var name by remember { mutableStateOf("") }
-    var event by remember { mutableStateOf(Evento("", "", "", "", "")) }
+    var event by remember { mutableStateOf(Event("", "")) }
 
     NavHost(
         navController = navController,

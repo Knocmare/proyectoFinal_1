@@ -20,9 +20,9 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import ruiz.angel.proyectofinal_1.data.models.Evento
-import ruiz.angel.proyectofinal_1.data.models.Subtarea
-import ruiz.angel.proyectofinal_1.data.models.Tarea
+import ruiz.angel.proyectofinal_1.data.models.Event
+import ruiz.angel.proyectofinal_1.data.models.Subtask
+import ruiz.angel.proyectofinal_1.data.models.Task
 import ruiz.angel.proyectofinal_1.ui.theme.Azul
 import ruiz.angel.proyectofinal_1.ui.theme.AzulClaro
 import ruiz.angel.proyectofinal_1.ui.theme.Borde
@@ -34,12 +34,12 @@ import ruiz.angel.proyectofinal_1.ui.theme.VerdeFondo
 
 @Composable
 fun TaskListScreen(
-    event: Evento,
+    event: Event,
     onCreateEvent: () -> Unit = {},
     onLeave: () -> Unit = {}
 ) {
-    var tareas by remember {
-        mutableStateOf(event.tareas)
+    var tasks by remember {
+        mutableStateOf(event.tasks)
     }
 
     Scaffold(
@@ -103,21 +103,21 @@ fun TaskListScreen(
 
                 EventCard(
                     event = event.copy(
-                        tareas = tareas
+                        tasks = tasks
                     ),
                     onToggleTask = { tareaIndex ->
-                        tareas = tareas.toMutableList().also { list ->
-                            val tarea = list[tareaIndex]
-                            list[tareaIndex] = tarea.copy(completada = !tarea.completada)
+                        tasks = tasks.toMutableList().also { list ->
+                            val task = list[tareaIndex]
+                            list[tareaIndex] = task.copy(completed = !task.completed)
                         }
                     },
-                    onToggleSubtask = { tareaIndex, subtareaIndex ->
-                        tareas = tareas.toMutableList().also { list ->
-                            val tarea = list[tareaIndex]
-                            val subs = tarea.subtareas.toMutableList()
-                            subs[subtareaIndex] = subs[subtareaIndex].copy(completed = !subs[subtareaIndex].completed)
+                    onToggleSubtask = { taskIndex, subtaskIndex ->
+                        tasks = tasks.toMutableList().also { list ->
+                            val task = list[taskIndex]
+                            val subs = task.subtasks.toMutableList()
+                            subs[subtaskIndex] = subs[subtaskIndex].copy(completed = !subs[subtaskIndex].completed)
                             val todasCompletas = subs.all { it.completed }
-                            list[tareaIndex] = tarea.copy(subtareas = subs, completada = todasCompletas)
+                            list[taskIndex] = task.copy(subtasks = subs, completed = todasCompletas)
                         }
                     }
                 )
@@ -182,7 +182,7 @@ fun UserHeader(
 
 @Composable
 fun EventCard(
-    event: Evento,
+    event: Event,
     onToggleTask: (Int) -> Unit,
     onToggleSubtask: (Int, Int) -> Unit
 ) {
@@ -207,7 +207,7 @@ fun EventCard(
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = event.nombre,
+                    text = event.name,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Medium,
                     modifier = Modifier.weight(1f)
@@ -217,7 +217,7 @@ fun EventCard(
             }
 
             Text(
-                text = "${event.taskCount} tareas · ${event.taskCompletedCount} completada · ${event.fecha}",
+                text = "${event.taskCount} tareas · ${event.taskCompletedCount} completada · ${event.date}",
                 fontSize = 12.sp,
                 color = Color.Gray,
                 modifier = Modifier.padding(start = 18.dp, top = 2.dp, bottom = 8.dp)
@@ -244,15 +244,15 @@ fun EventCard(
 
             HorizontalDivider(color = Borde, thickness = 0.5.dp)
 
-            event.tareas.forEachIndexed { index, tarea ->
-                if (tarea.completada) {
+            event.tasks.forEachIndexed { index, task ->
+                if (task.completed) {
                     TaskCompleted(
-                        tarea = tarea,
+                        task = task,
                         onClick = { onToggleTask(index) }
                     )
                 } else {
                     TaskRow(
-                        tarea = tarea,
+                        task = task,
                         expandida = expandedTaskIndex == index,
                         onClickTask = {
                             expandedTaskIndex = if (expandedTaskIndex == index) -1 else index
@@ -261,7 +261,7 @@ fun EventCard(
                         onToggleSubtask = { subIndex -> onToggleSubtask(index, subIndex) }
                     )
                 }
-                if (index < event.tareas.lastIndex) {
+                if (index < event.tasks.lastIndex) {
                     HorizontalDivider(color = Borde, thickness = 0.5.dp)
                 }
             }
@@ -294,7 +294,7 @@ fun EventCard(
 
 @Composable
 fun TaskRow(
-    tarea: Tarea,
+    task: Task,
     expandida: Boolean,
     onClickTask: () -> Unit,
     onToggleTask: () -> Unit,
@@ -318,15 +318,15 @@ fun TaskRow(
             Spacer(modifier = Modifier.width(10.dp))
 
             Text(
-                text = tarea.nombre,
+                text = task.name,
                 fontSize = 14.sp,
                 modifier = Modifier
                     .weight(1f)
                     .clickable { onClickTask() }
             )
-            if (tarea.subCount > 0) {
+            if (task.subtaskCount > 0) {
                 Text(
-                    text = "${tarea.subCount} sub ›",
+                    text = "${task.subtaskCount} sub ›",
                     fontSize = 12.sp,
                     color = Azul,
                     modifier = Modifier
@@ -334,10 +334,10 @@ fun TaskRow(
                         .clickable { onClickTask() }
                 )
             }
-            Text(text = String.format("$%,d", tarea.precio), fontSize = 14.sp, fontWeight = FontWeight.Medium, color = Azul)
+            Text(text = String.format("$%,d", task.price), fontSize = 14.sp, fontWeight = FontWeight.Medium, color = Azul)
         }
 
-        if (expandida && tarea.subtareas.isNotEmpty()) {
+        if (expandida && task.subtasks.isNotEmpty()) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -345,12 +345,12 @@ fun TaskRow(
                     .clip(RoundedCornerShape(8.dp))
                     .background(FondoSubtarea)
             ) {
-                tarea.subtareas.forEachIndexed { i, subtarea ->
+                task.subtasks.forEachIndexed { i, subtask ->
                     SubtaskRow(
-                        subtarea = subtarea,
+                        subtask = subtask,
                         onToggle = { onToggleSubtask(i) }
                     )
-                    if (i < tarea.subtareas.lastIndex) {
+                    if (i < task.subtasks.lastIndex) {
                         HorizontalDivider(color = Borde, thickness = 0.5.dp)
                     }
                 }
@@ -361,7 +361,7 @@ fun TaskRow(
 }
 
 @Composable
-fun SubtaskRow(subtarea: Subtarea, onToggle: () -> Unit) {
+fun SubtaskRow(subtask: Subtask, onToggle: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -373,28 +373,28 @@ fun SubtaskRow(subtarea: Subtarea, onToggle: () -> Unit) {
             modifier = Modifier
                 .size(17.dp)
                 .clip(RoundedCornerShape(3.dp))
-                .background(if (subtarea.completed) Azul else Color.White)
-                .border(1.5.dp, if (subtarea.completed) Azul else Color.LightGray, RoundedCornerShape(3.dp)),
+                .background(if (subtask.completed) Azul else Color.White)
+                .border(1.5.dp, if (subtask.completed) Azul else Color.LightGray, RoundedCornerShape(3.dp)),
             contentAlignment = Alignment.Center
         ) {
-            if (subtarea.completed) {
+            if (subtask.completed) {
                 Text(text = "✓", color = Color.White, fontSize = 10.sp)
             }
         }
         Spacer(modifier = Modifier.width(8.dp))
         Text(
-            text = subtarea.name,
+            text = subtask.name,
             fontSize = 13.sp,
             modifier = Modifier.weight(1f),
-            color = if (subtarea.completed) Color.Gray else Color.Black,
-            textDecoration = if (subtarea.completed) TextDecoration.LineThrough else TextDecoration.None
+            color = if (subtask.completed) Color.Gray else Color.Black,
+            textDecoration = if (subtask.completed) TextDecoration.LineThrough else TextDecoration.None
         )
-        Text(text = String.format("$%,d", subtarea.price), fontSize = 13.sp, color = Color.Gray)
+        Text(text = String.format("$%,d", subtask.price), fontSize = 13.sp, color = Color.Gray)
     }
 }
 
 @Composable
-fun TaskCompleted(tarea: Tarea, onClick: () -> Unit) {
+fun TaskCompleted(task: Task, onClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -415,14 +415,14 @@ fun TaskCompleted(tarea: Tarea, onClick: () -> Unit) {
         }
         Spacer(modifier = Modifier.width(10.dp))
         Text(
-            text = tarea.nombre,
+            text = task.name,
             fontSize = 14.sp,
             color = Color.Gray,
             modifier = Modifier.weight(1f),
             textDecoration = TextDecoration.LineThrough
         )
         Text(text = "✓ lista", fontSize = 12.sp, color = Verde, modifier = Modifier.padding(end = 8.dp))
-        Text(text = String.format("$%,d", tarea.precio), fontSize = 14.sp, fontWeight = FontWeight.Medium, color = Verde)
+        Text(text = String.format("$%,d", task.price), fontSize = 14.sp, fontWeight = FontWeight.Medium, color = Verde)
     }
 }
 
@@ -446,22 +446,22 @@ fun TaskListScreenPreview() {
             emailUsuario = "joel@itson.edu.mx",
             inicialesUsuario = "JR",
             tareas = listOf(
-                Tarea(
-                    nombre = "Salón de eventos",
-                    completada = false,
-                    subtareas = listOf(
-                        Subtarea("Cotización de salones", 0, completed = true),
-                        Subtarea("Reserva del salón", 5000, completed = false),
-                        Subtarea("Decoración", 7000, completed = false),
+                Task(
+                    name = "Salón de eventos",
+                    completed = false,
+                    subtasks = listOf(
+                        Subtask("Cotización de salones", 0, completed = true),
+                        Subtask("Reserva del salón", 5000, completed = false),
+                        Subtask("Decoración", 7000, completed = false),
                     )
                 ),
-                Tarea("Comida", completada = false, subtareas = listOf(
-                    Subtarea("Carne Azada", 5000, completed = false)
+                Task("Comida", completed = false, subtasks = listOf(
+                    Subtask("Carne Azada", 5000, completed = false)
                 )),
-                Tarea("Fotografía y video", completada = false),
-                Tarea("Invitaciones", completada = true, subtareas = listOf(
-                    Subtarea("Crear invitaciones", 500, completed = true),
-                    Subtarea("Entregar invitaciones", 0, completed = true)
+                Task("Fotografía y video", completed = false),
+                Task("Invitaciones", completed = true, subtasks = listOf(
+                    Subtask("Crear invitaciones", 500, completed = true),
+                    Subtask("Entregar invitaciones", 0, completed = true)
                 ))
             )
         )

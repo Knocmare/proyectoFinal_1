@@ -1,6 +1,7 @@
 package ruiz.angel.proyectofinal_1.data.models
 
 data class Event(
+    val id: Long = 0,
     val name: String,
     val date: String,
     val tasks: List<Task> = emptyList()

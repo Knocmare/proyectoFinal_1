@@ -1,6 +1,7 @@
 package ruiz.angel.proyectofinal_1.data.models
 
 data class Task(
+    val id: Long = 0,
     val name: String,
     val completed: Boolean,
     val subtasks: List<Subtask> = emptyList()

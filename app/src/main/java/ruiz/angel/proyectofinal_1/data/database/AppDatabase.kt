@@ -7,6 +7,7 @@ import androidx.room.RoomDatabase
 import ruiz.angel.proyectofinal_1.data.database.dao.EventDao
 import ruiz.angel.proyectofinal_1.data.database.dao.SubtaskDao
 import ruiz.angel.proyectofinal_1.data.database.dao.TaskDao
+import ruiz.angel.proyectofinal_1.data.database.dao.UserDao
 import ruiz.angel.proyectofinal_1.data.database.entity.EventEntity
 import ruiz.angel.proyectofinal_1.data.database.entity.SubtaskEntity
 import ruiz.angel.proyectofinal_1.data.database.entity.TaskEntity
@@ -22,6 +23,8 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun eventDao(): EventDao
     abstract fun taskDao(): TaskDao
     abstract fun subtaskDao(): SubtaskDao
+
+    abstract fun userDao(): UserDao
 
     companion object {
         @Volatile

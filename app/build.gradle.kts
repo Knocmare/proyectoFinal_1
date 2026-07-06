@@ -41,6 +41,7 @@ android {
 
 dependencies {
     implementation(libs.androidx.material3)
+    implementation(libs.androidx.room3.common.jvm)
     val nav_version = "2.9.8"
     // Jetpack Compose integration
     implementation("androidx.navigation:navigation-compose:${nav_version}")

@@ -5,6 +5,8 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import ruiz.angel.proyectofinal_1.data.database.dao.EventDao
+import ruiz.angel.proyectofinal_1.data.database.dao.SubtaskDao
+import ruiz.angel.proyectofinal_1.data.database.dao.TaskDao
 import ruiz.angel.proyectofinal_1.data.database.entity.EventEntity
 import ruiz.angel.proyectofinal_1.data.database.entity.SubtaskEntity
 import ruiz.angel.proyectofinal_1.data.database.entity.TaskEntity
@@ -18,6 +20,8 @@ import ruiz.angel.proyectofinal_1.data.database.entity.UserEntity
 abstract class AppDatabase : RoomDatabase() {
 
     abstract fun eventDao(): EventDao
+    abstract fun taskDao(): TaskDao
+    abstract fun subtaskDao(): SubtaskDao
 
     companion object {
         @Volatile
@@ -28,7 +32,7 @@ abstract class AppDatabase : RoomDatabase() {
                 val instance = Room.databaseBuilder(context.applicationContext, AppDatabase::class.java, "proyecto_final.db")
                     .fallbackToDestructiveMigration()
                     .build()
-                
+
                 INSTANCE = instance
                 instance
             }

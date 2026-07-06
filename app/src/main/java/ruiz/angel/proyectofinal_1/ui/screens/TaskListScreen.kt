@@ -31,16 +31,18 @@ import ruiz.angel.proyectofinal_1.ui.theme.FondoSubtarea
 import ruiz.angel.proyectofinal_1.ui.theme.FondoTarjeta
 import ruiz.angel.proyectofinal_1.ui.theme.Verde
 import ruiz.angel.proyectofinal_1.ui.theme.VerdeFondo
+import ruiz.angel.proyectofinal_1.viewModel.EventsViewModel
 
 @Composable
 fun TaskListScreen(
-    event: Event,
+    viewModel: EventsViewModel,
+    name: String,
+    email: String,
+    iniciales: String,
     onCreateEvent: () -> Unit = {},
     onLeave: () -> Unit = {}
 ) {
-    var tasks by remember {
-        mutableStateOf(event.tasks)
-    }
+    val events = viewModel.eventsListState
 
     Scaffold(
         bottomBar = {
@@ -73,11 +75,12 @@ fun TaskListScreen(
                 .padding(innerPadding)
         ) {
             UserHeader(
-                name = event.nombreUsuario,
-                email = event.emailUsuario,
-                iniciales = event.inicialesUsuario,
+                name = name,
+                email = email,
+                iniciales = iniciales,
                 onLeave = onLeave
             )
+
 
             Column(
                 modifier = Modifier
@@ -101,26 +104,20 @@ fun TaskListScreen(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                EventCard(
-                    event = event.copy(
-                        tasks = tasks
-                    ),
-                    onToggleTask = { tareaIndex ->
-                        tasks = tasks.toMutableList().also { list ->
-                            val task = list[tareaIndex]
-                            list[tareaIndex] = task.copy(completed = !task.completed)
+                events.forEach { event ->
+                    EventCard(
+                        event = event,
+                        onToggleTask = { taskIndex ->
+                            val task = event.tasks[taskIndex]
+                            viewModel.toggleTask(task.id, !task.completed)
+                        },
+                        onToggleSubtask = { taskIndex, subtaskIndex ->
+                            val subtask = event.tasks[taskIndex].subtasks[subtaskIndex]
+                            viewModel.toggleSubtask(subtask.id, !subtask.completed)
                         }
-                    },
-                    onToggleSubtask = { taskIndex, subtaskIndex ->
-                        tasks = tasks.toMutableList().also { list ->
-                            val task = list[taskIndex]
-                            val subs = task.subtasks.toMutableList()
-                            subs[subtaskIndex] = subs[subtaskIndex].copy(completed = !subs[subtaskIndex].completed)
-                            val todasCompletas = subs.all { it.completed }
-                            list[taskIndex] = task.copy(subtasks = subs, completed = todasCompletas)
-                        }
-                    }
-                )
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                }
             }
         }
     }
@@ -433,37 +430,4 @@ fun BudgetColumn(label: String, valor: String, colorValor: Color) {
         Spacer(modifier = Modifier.height(3.dp))
         Text(text = valor, fontSize = 14.sp, fontWeight = FontWeight.Medium, color = colorValor)
     }
-}
-
-@Preview(showBackground = true, showSystemUi = true)
-@Composable
-fun TaskListScreenPreview() {
-    TaskListScreen(
-        event = Evento(
-            nombre = "Boda",
-            fecha = "15 Jul 2026",
-            nombreUsuario = "Joel Ruben",
-            emailUsuario = "joel@itson.edu.mx",
-            inicialesUsuario = "JR",
-            tareas = listOf(
-                Task(
-                    name = "Salón de eventos",
-                    completed = false,
-                    subtasks = listOf(
-                        Subtask("Cotización de salones", 0, completed = true),
-                        Subtask("Reserva del salón", 5000, completed = false),
-                        Subtask("Decoración", 7000, completed = false),
-                    )
-                ),
-                Task("Comida", completed = false, subtasks = listOf(
-                    Subtask("Carne Azada", 5000, completed = false)
-                )),
-                Task("Fotografía y video", completed = false),
-                Task("Invitaciones", completed = true, subtasks = listOf(
-                    Subtask("Crear invitaciones", 500, completed = true),
-                    Subtask("Entregar invitaciones", 0, completed = true)
-                ))
-            )
-        )
-    )
 }

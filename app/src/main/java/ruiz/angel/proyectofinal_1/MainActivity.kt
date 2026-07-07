@@ -9,8 +9,11 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.ui.Modifier
 import ruiz.angel.proyectofinal_1.data.database.AppDatabase
 import ruiz.angel.proyectofinal_1.data.repository.EventsRepository
+import ruiz.angel.proyectofinal_1.data.repository.UserRepository
+import ruiz.angel.proyectofinal_1.data.security.SessionManager
 import ruiz.angel.proyectofinal_1.navigation.Navigation
 import ruiz.angel.proyectofinal_1.ui.theme.ProyectoFinal_1Theme
+import ruiz.angel.proyectofinal_1.viewModel.AuthViewModel
 import ruiz.angel.proyectofinal_1.viewModel.EventsViewModel
 
 class MainActivity : ComponentActivity() {
@@ -18,13 +21,15 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         val database = AppDatabase.getInstance(this)
+        val sessionManager = SessionManager(this)
         val eventsViewModel = EventsViewModel(EventsRepository(database))
+        val authViewModel = AuthViewModel(UserRepository(database, sessionManager))
 
         enableEdgeToEdge()
         setContent {
             ProyectoFinal_1Theme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Navigation(innerPadding, eventsViewModel)
+                    Navigation(innerPadding, eventsViewModel, authViewModel)
                 }
             }
         }

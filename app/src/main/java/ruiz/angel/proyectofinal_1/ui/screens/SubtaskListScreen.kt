@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -396,11 +395,3 @@ private fun TaskFormDialog(
     )
 }
 
-@Composable
-private fun BudgetColumn(label: String, valor: String, colorValor: Color) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.width(90.dp)) {
-        Text(text = label, fontSize = 10.sp, color = Color.Gray, letterSpacing = 0.5.sp)
-        Spacer(modifier = Modifier.height(3.dp))
-        Text(text = valor, fontSize = 14.sp, fontWeight = FontWeight.Medium, color = colorValor)
-    }
-}

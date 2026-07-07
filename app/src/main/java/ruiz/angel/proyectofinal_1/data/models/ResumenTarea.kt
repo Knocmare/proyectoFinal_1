@@ -1,6 +1,5 @@
 package ruiz.angel.proyectofinal_1.data.models
 
-
 import androidx.compose.ui.graphics.Color
 import ruiz.angel.proyectofinal_1.ui.theme.Azul
 import ruiz.angel.proyectofinal_1.ui.theme.GrisOscuro
@@ -10,22 +9,18 @@ import ruiz.angel.proyectofinal_1.ui.theme.Rosa
 import ruiz.angel.proyectofinal_1.ui.theme.Verde
 
 data class ResumenTarea(
-    val tarea: Tarea,
+    val tarea: Task,
     val color: Color
 ) {
 
     val nombre: String
-        get() = tarea.nombre
+        get() = tarea.name
 
     val estimado: Int
-        get() = tarea.precio
+        get() = tarea.price
 
     val gastado: Int
-        get() = if (tarea.completed) {
-            tarea.precio
-        } else {
-            tarea.subtareas.filter { it.completed }.sumOf { it.price }
-        }
+        get() = tarea.spent
 
     val porcentaje: Float
         get() = if (estimado == 0) {
@@ -36,7 +31,7 @@ data class ResumenTarea(
 
     val estado: EstadoTarea
         get() = when {
-            tarea.completed -> EstadoTarea.COMPLETADA
+            tarea.isFullyCompleted -> EstadoTarea.COMPLETADA
             gastado > estimado -> EstadoTarea.EXCEDIDA
             gastado > 0 -> EstadoTarea.EN_PROGRESO
             else -> EstadoTarea.PENDIENTE
@@ -59,8 +54,8 @@ val PaletaTareas: List<Color> = listOf(
     GrisOscuro
 )
 
-fun Evento.toResumen(): List<ResumenTarea> {
-    return tareas.mapIndexed { index, tarea ->
+fun Event.toResumen(): List<ResumenTarea> {
+    return tasks.mapIndexed { index, tarea ->
         ResumenTarea(
             tarea = tarea,
             color = PaletaTareas[index % PaletaTareas.size]

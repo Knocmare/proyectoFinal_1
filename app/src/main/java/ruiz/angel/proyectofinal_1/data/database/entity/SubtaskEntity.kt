@@ -27,8 +27,17 @@ data class SubtaskEntity(
     @ColumnInfo(name = "nameSubtask")
     val name: String,
 
-    @ColumnInfo(name = "priceSubtask")
-    val price: Int,
+    @ColumnInfo(name = "descriptionSubtask")
+    val description: String = "",
+
+    @ColumnInfo(name = "estimatedPriceSubtask")
+    val estimatedPrice: Int,
+
+    @ColumnInfo(name = "realPriceSubtask")
+    val realPrice: Int? = null,
+
+    @ColumnInfo(name = "placeSubtask")
+    val place: String? = null,
 
     @ColumnInfo(name = "completedSubtask")
     val completed: Boolean

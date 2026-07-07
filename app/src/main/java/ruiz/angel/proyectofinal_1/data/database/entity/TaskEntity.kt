@@ -27,6 +27,15 @@ data class TaskEntity(
     @ColumnInfo(name = "nameTask")
     val name: String,
 
+    @ColumnInfo(name = "descriptionTask")
+    val description: String = "",
+
+    @ColumnInfo(name = "estimatedPriceTask")
+    val estimatedPrice: Int = 0,
+
+    @ColumnInfo(name = "realPriceTask")
+    val realPrice: Int? = null,
+
     @ColumnInfo(name = "completedTask")
     val completed: Boolean
 )

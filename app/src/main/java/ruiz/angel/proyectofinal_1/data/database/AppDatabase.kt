@@ -5,23 +5,34 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import ruiz.angel.proyectofinal_1.data.database.dao.EventDao
+import ruiz.angel.proyectofinal_1.data.database.dao.PriceOptionDao
 import ruiz.angel.proyectofinal_1.data.database.dao.SubtaskDao
 import ruiz.angel.proyectofinal_1.data.database.dao.TaskDao
+import ruiz.angel.proyectofinal_1.data.database.dao.UserDao
 import ruiz.angel.proyectofinal_1.data.database.entity.EventEntity
+import ruiz.angel.proyectofinal_1.data.database.entity.PriceOptionEntity
 import ruiz.angel.proyectofinal_1.data.database.entity.SubtaskEntity
 import ruiz.angel.proyectofinal_1.data.database.entity.TaskEntity
 import ruiz.angel.proyectofinal_1.data.database.entity.UserEntity
 
 @Database(
-    entities = [UserEntity::class, EventEntity::class, TaskEntity::class, SubtaskEntity::class],
-    version = 1,
+    entities = [
+        UserEntity::class,
+        EventEntity::class,
+        TaskEntity::class,
+        SubtaskEntity::class,
+        PriceOptionEntity::class
+    ],
+    version = 2,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
 
+    abstract fun userDao(): UserDao
     abstract fun eventDao(): EventDao
     abstract fun taskDao(): TaskDao
     abstract fun subtaskDao(): SubtaskDao
+    abstract fun priceOptionDao(): PriceOptionDao
 
     companion object {
         @Volatile

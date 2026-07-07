@@ -22,9 +22,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import ruiz.angel.proyectofinal_1.data.models.EstadoTarea
-import ruiz.angel.proyectofinal_1.data.models.Evento
-import ruiz.angel.proyectofinal_1.data.models.Subtarea
-import ruiz.angel.proyectofinal_1.data.models.Tarea
+import ruiz.angel.proyectofinal_1.data.models.Event
+import ruiz.angel.proyectofinal_1.data.models.Subtask
+import ruiz.angel.proyectofinal_1.data.models.Task
 import ruiz.angel.proyectofinal_1.data.models.ResumenTarea
 import ruiz.angel.proyectofinal_1.data.models.toResumen
 import ruiz.angel.proyectofinal_1.ui.theme.Azul
@@ -41,7 +41,7 @@ import ruiz.angel.proyectofinal_1.ui.theme.VerdeFondo
 
 @Composable
 fun EventSummaryScreen(
-    evento: Evento,
+    evento: Event,
     onBack: () -> Unit = {}
 ) {
     val resumenTareas = evento.toResumen()
@@ -57,8 +57,8 @@ fun EventSummaryScreen(
                 .padding(innerPadding)
         ) {
             SummaryTopBar(
-                eventoNombre = evento.nombre,
-                fecha = evento.fecha,
+                eventoNombre = evento.name,
+                fecha = evento.date,
                 onBack = onBack
             )
 
@@ -486,43 +486,40 @@ fun BreakdownRow(item: ResumenTarea) {
 @Composable
 fun EventSummaryScreenPreview() {
     EventSummaryScreen(
-        evento = Evento(
-            nombre = "Boda",
-            fecha = "15 Jul 2026",
-            nombreUsuario = "Joel Ruben",
-            emailUsuario = "joel@itson.edu.mx",
-            inicialesUsuario = "JR",
-            tareas = listOf(
-                Tarea(
-                    nombre = "Salón de eventos",
-                    completada = false,
-                    subtareas = listOf(
-                        Subtarea("Cotización de salones", 0, completed = true),
-                        Subtarea("Reserva del salón", 5000, completed = true),
-                        Subtarea("Decoración", 7000, completed = false),
+        evento = Event(
+            name = "Boda",
+            date = "15 Jul 2026",
+            tasks = listOf(
+                Task(
+                    name = "Salón de eventos",
+                    completed = false,
+                    subtasks = listOf(
+                        Subtask(name = "Cotización de salones", estimatedPrice = 0, realPrice = 0, completed = true),
+                        Subtask(name = "Reserva del salón", estimatedPrice = 5000, realPrice = 5000, completed = true),
+                        Subtask(name = "Decoración", estimatedPrice = 7000, completed = false),
                     )
                 ),
-                Tarea(
-                    nombre = "Comida",
-                    completada = false,
-                    subtareas = listOf(
-                        Subtarea("Carne Azada", 9500, completed = true)
+                Task(
+                    name = "Comida",
+                    completed = false,
+                    subtasks = listOf(
+                        Subtask(name = "Carne Azada", estimatedPrice = 9500, realPrice = 9500, completed = true)
                     )
                 ),
-                Tarea(
-                    nombre = "Fotografía y video",
-                    completada = false,
-                    subtareas = listOf(
-                        Subtarea("Sesión de fotos", 1900, completed = true),
-                        Subtarea("Video del evento", 6600, completed = false)
+                Task(
+                    name = "Fotografía y video",
+                    completed = false,
+                    subtasks = listOf(
+                        Subtask(name = "Sesión de fotos", estimatedPrice = 1900, realPrice = 1900, completed = true),
+                        Subtask(name = "Video del evento", estimatedPrice = 6600, completed = false)
                     )
                 ),
-                Tarea(
-                    nombre = "Invitaciones",
-                    completada = true,
-                    subtareas = listOf(
-                        Subtarea("Crear invitaciones", 500, completed = true),
-                        Subtarea("Entregar invitaciones", 2000, completed = true)
+                Task(
+                    name = "Invitaciones",
+                    completed = true,
+                    subtasks = listOf(
+                        Subtask(name = "Crear invitaciones", estimatedPrice = 500, realPrice = 500, completed = true),
+                        Subtask(name = "Entregar invitaciones", estimatedPrice = 2000, realPrice = 2000, completed = true)
                     )
                 )
             )

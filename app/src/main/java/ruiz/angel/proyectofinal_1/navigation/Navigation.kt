@@ -3,34 +3,58 @@ package ruiz.angel.proyectofinal_1.navigation
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import ruiz.angel.proyectofinal_1.data.models.Event
+import androidx.navigation.toRoute
+import ruiz.angel.proyectofinal_1.ui.screens.CreateEventScreen
+import ruiz.angel.proyectofinal_1.ui.screens.CreateTaskScreen
+import ruiz.angel.proyectofinal_1.ui.screens.EventSummaryScreen
 import ruiz.angel.proyectofinal_1.ui.screens.LoginScreen
 import ruiz.angel.proyectofinal_1.ui.screens.PriceComparationScreen
 import ruiz.angel.proyectofinal_1.ui.screens.ProfileConfigurationScreen
 import ruiz.angel.proyectofinal_1.ui.screens.RegisterScreen
+import ruiz.angel.proyectofinal_1.ui.screens.SubtaskListScreen
 import ruiz.angel.proyectofinal_1.ui.screens.TaskListScreen
+import ruiz.angel.proyectofinal_1.viewModel.AuthViewModel
 import ruiz.angel.proyectofinal_1.viewModel.EventsViewModel
 
 @Composable
-fun Navigation(innerPadding: PaddingValues, eventsViewModel: EventsViewModel = viewModel()) {
+fun Navigation(
+    innerPadding: PaddingValues,
+    eventsViewModel: EventsViewModel,
+    authViewModel: AuthViewModel
+) {
     val navController = rememberNavController()
+    val currentUser by authViewModel.currentUser.collectAsState()
 
-//    val userId = 1L
-//    val name = "prueba"
-//    val email = "prueba@itson.edu.mx"
-    var email by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
-    var name by remember { mutableStateOf("") }
-    var event by remember { mutableStateOf(Event(0, "", "")) }
+    var loginEmail by remember { mutableStateOf("") }
+    var loginPassword by remember { mutableStateOf("") }
+    var registerName by remember { mutableStateOf("") }
+    var registerEmail by remember { mutableStateOf("") }
+    var registerPassword by remember { mutableStateOf("") }
+    var registerConfirmPassword by remember { mutableStateOf("") }
+
+    // Auto-login: si ya hay una sesión guardada (DataStore), saltamos el Login.
+    LaunchedEffect(currentUser) {
+        val user = currentUser
+        if (user != null) {
+            eventsViewModel.loadEvents(user.id)
+            if (navController.currentDestination?.hasRoute<Login>() == true) {
+                navController.navigate(TaskList) {
+                    popUpTo(Login) { inclusive = true }
+                }
+            }
+        }
+    }
 
     NavHost(
         navController = navController,
@@ -39,52 +63,146 @@ fun Navigation(innerPadding: PaddingValues, eventsViewModel: EventsViewModel = v
     ) {
         composable<Login> {
             LoginScreen(
-                email = email,
-                onEmailChange = { email = it },
-                password = password,
-                onPasswordChange = { password = it },
-                onLoginClick = { navController.navigate(TaskList) },
+                email = loginEmail,
+                onEmailChange = { loginEmail = it },
+                password = loginPassword,
+                onPasswordChange = { loginPassword = it },
+                errorMessage = authViewModel.errorMessage,
+                isLoading = authViewModel.isLoading,
+                onLoginClick = {
+                    authViewModel.login(loginEmail, loginPassword) {
+                        navController.navigate(TaskList) {
+                            popUpTo(Login) { inclusive = true }
+                        }
+                    }
+                },
                 onForgotPasswordClick = { },
-                onRegisterClick = { navController.navigate(Register) }
+                onRegisterClick = {
+                    authViewModel.clearError()
+                    navController.navigate(Register)
+                }
             )
         }
         composable<Register> {
             RegisterScreen(
-                name = name,
-                onNameChange = { name = it },
-                email = email,
-                onEmailChange = { email = it },
-                password = password,
-                onPasswordChange = { password = it },
+                name = registerName,
+                onNameChange = { registerName = it },
+                email = registerEmail,
+                onEmailChange = { registerEmail = it },
+                password = registerPassword,
+                onPasswordChange = { registerPassword = it },
+                confirmPassword = registerConfirmPassword,
+                onConfirmPasswordChange = { registerConfirmPassword = it },
+                errorMessage = authViewModel.errorMessage,
+                isLoading = authViewModel.isLoading,
                 onBackClick = { navController.popBackStack() },
-                onRegisterClick = { navController.navigate(PriceComparison) },
-                onLoginClick = { navController.navigate(Login) }
+                onRegisterClick = {
+                    authViewModel.register(registerName, registerEmail, registerPassword, registerConfirmPassword) {
+                        navController.navigate(TaskList) {
+                            popUpTo(Login) { inclusive = true }
+                        }
+                    }
+                },
+                onLoginClick = {
+                    authViewModel.clearError()
+                    navController.navigate(Login)
+                }
             )
         }
         composable<TaskList> {
-            TaskListScreen(
-                viewModel = eventsViewModel,
-                name = name,
-                email = email,
-                iniciales = "P",
-                onCreateEvent = { navController.navigate(Configuration) },
-                onLeave = { navController.navigate(Login) }
-            )
+            val user = currentUser
+            if (user == null) {
+                LaunchedEffect(Unit) {
+                    navController.navigate(Login) { popUpTo(0) }
+                }
+            } else {
+                TaskListScreen(
+                    viewModel = eventsViewModel,
+                    name = user.name,
+                    email = user.email,
+                    iniciales = user.name.take(1).uppercase(),
+                    onCreateEvent = { navController.navigate(CreateEvent) },
+                    onAddTask = { eventId -> navController.navigate(CreateTask(eventId)) },
+                    onOpenTask = { taskId -> navController.navigate(SubtaskList(taskId)) },
+                    onOpenSummary = { eventId -> navController.navigate(Summary(eventId)) },
+                    onOpenAccount = { navController.navigate(Configuration) },
+                    onLeave = {
+                        authViewModel.logout {
+                            navController.navigate(Login) { popUpTo(0) }
+                        }
+                    }
+                )
+            }
         }
         composable<Configuration> {
+            val user = currentUser
             ProfileConfigurationScreen(
-                name = name,
-                email = email,
-                onBackClick = { navController.popBackStack() },
-                onLogout = { navController.navigate(Login) },
-                onSaveProfile = {  },
-                onChangePassword = { current, new ->  }
+                name = user?.name.orEmpty(),
+                email = user?.email.orEmpty(),
+                passwordError = authViewModel.errorMessage,
+                onBackClick = {
+                    authViewModel.clearError()
+                    navController.popBackStack()
+                },
+                onLogout = {
+                    authViewModel.logout {
+                        navController.navigate(Login) { popUpTo(0) }
+                    }
+                },
+                onSaveProfile = { newName ->
+                    user?.let { authViewModel.updateName(it.id, newName) }
+                },
+                onChangePassword = { current, new ->
+                    user?.let { authViewModel.changePassword(it.id, current, new) {} }
+                }
             )
         }
-        composable<PriceComparison> {
+        composable<CreateEvent> {
+            val user = currentUser
+            CreateEventScreen(
+                onCancel = { navController.popBackStack() },
+                onSave = { eventName, date ->
+                    user?.let { eventsViewModel.createEvent(it.id, eventName, date) }
+                    navController.popBackStack()
+                }
+            )
+        }
+        composable<CreateTask> { backStackEntry ->
+            val route: CreateTask = backStackEntry.toRoute()
+            CreateTaskScreen(
+                onCancel = { navController.popBackStack() },
+                onSave = { taskName, description, estimatedPrice ->
+                    eventsViewModel.createTask(route.eventId, taskName, description, estimatedPrice)
+                    navController.popBackStack()
+                }
+            )
+        }
+        composable<SubtaskList> { backStackEntry ->
+            val route: SubtaskList = backStackEntry.toRoute()
+            SubtaskListScreen(
+                taskId = route.taskId,
+                viewModel = eventsViewModel,
+                onBackClick = { navController.popBackStack() },
+                onCompareClick = { subtaskId -> navController.navigate(PriceComparisonRoute(subtaskId)) }
+            )
+        }
+        composable<PriceComparisonRoute> { backStackEntry ->
+            val route: PriceComparisonRoute = backStackEntry.toRoute()
             PriceComparationScreen(
+                subtaskId = route.subtaskId,
+                viewModel = eventsViewModel,
                 onBackClick = { navController.popBackStack() }
             )
+        }
+        composable<Summary> { backStackEntry ->
+            val route: Summary = backStackEntry.toRoute()
+            val event = eventsViewModel.eventsListState.firstOrNull { it.id == route.eventId }
+            if (event != null) {
+                EventSummaryScreen(
+                    evento = event,
+                    onBack = { navController.popBackStack() }
+                )
+            }
         }
     }
 }

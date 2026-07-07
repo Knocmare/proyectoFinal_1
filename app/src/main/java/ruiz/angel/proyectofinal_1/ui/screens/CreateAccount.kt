@@ -39,6 +39,10 @@ fun RegisterScreen(
     onEmailChange: (String) -> Unit,
     password: String,
     onPasswordChange: (String) -> Unit,
+    confirmPassword: String = "",
+    onConfirmPasswordChange: (String) -> Unit = {},
+    errorMessage: String? = null,
+    isLoading: Boolean = false,
     onBackClick: () -> Unit,
     onRegisterClick: () -> Unit,
     onLoginClick: () -> Unit
@@ -177,12 +181,50 @@ fun RegisterScreen(
             )
 
 
+            Spacer(modifier = Modifier.height(16.dp))
+
+
+            OutlinedTextField(
+                value = confirmPassword,
+                onValueChange = onConfirmPasswordChange,
+                modifier = Modifier.fillMaxWidth(),
+                placeholder = { Text("Confirmar contraseña", color = TextGray) },
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Outlined.Lock,
+                        contentDescription = "Icono de candado",
+                        tint = TextGray
+                    )
+                },
+                singleLine = true,
+                visualTransformation = PasswordVisualTransformation(),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                shape = RoundedCornerShape(8.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = PrimaryBlue,
+                    unfocusedBorderColor = BorderGray,
+                    focusedContainerColor = Color.Transparent,
+                    unfocusedContainerColor = Color.Transparent
+                )
+            )
+
+            if (!errorMessage.isNullOrEmpty()) {
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    text = errorMessage,
+                    color = MaterialTheme.colorScheme.error,
+                    fontSize = 13.sp
+                )
+            }
+
+
             Spacer(modifier = Modifier.weight(1f, fill = true))
             Spacer(modifier = Modifier.height(32.dp))
 
 
             Button(
                 onClick = onRegisterClick,
+                enabled = !isLoading,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(50.dp),

@@ -8,6 +8,9 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -17,7 +20,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import ruiz.angel.proyectofinal_1.data.models.Event
@@ -40,6 +42,10 @@ fun TaskListScreen(
     email: String,
     iniciales: String,
     onCreateEvent: () -> Unit = {},
+    onAddTask: (Long) -> Unit = {},
+    onOpenTask: (Long) -> Unit = {},
+    onOpenSummary: (Long) -> Unit = {},
+    onOpenAccount: () -> Unit = {},
     onLeave: () -> Unit = {}
 ) {
     val events = viewModel.eventsListState
@@ -78,6 +84,7 @@ fun TaskListScreen(
                 name = name,
                 email = email,
                 iniciales = iniciales,
+                onOpenAccount = onOpenAccount,
                 onLeave = onLeave
             )
 
@@ -99,22 +106,29 @@ fun TaskListScreen(
                         fontWeight = FontWeight.Medium,
                         color = Color.Black
                     )
-                    Text(text = "1 evento", fontSize = 13.sp, color = Color.Gray)
+                    Text(text = "${events.size} evento${if (events.size == 1) "" else "s"}", fontSize = 13.sp, color = Color.Gray)
                 }
 
                 Spacer(modifier = Modifier.height(12.dp))
 
+                if (events.isEmpty()) {
+                    Text(
+                        "Aún no tienes eventos. Crea el primero con el botón de abajo.",
+                        fontSize = 13.sp,
+                        color = Color.Gray,
+                        modifier = Modifier.padding(vertical = 24.dp)
+                    )
+                }
+
                 events.forEach { event ->
                     EventCard(
                         event = event,
-                        onToggleTask = { taskIndex ->
-                            val task = event.tasks[taskIndex]
-                            viewModel.toggleTask(task.id, !task.completed)
-                        },
-                        onToggleSubtask = { taskIndex, subtaskIndex ->
-                            val subtask = event.tasks[taskIndex].subtasks[subtaskIndex]
-                            viewModel.toggleSubtask(subtask.id, !subtask.completed)
-                        }
+                        onToggleTask = { taskId, completed -> viewModel.toggleTask(taskId, completed) },
+                        onToggleSubtask = { subtaskId, completed -> viewModel.toggleSubtask(subtaskId, completed) },
+                        onOpenTask = onOpenTask,
+                        onAddTask = { onAddTask(event.id) },
+                        onOpenSummary = { onOpenSummary(event.id) },
+                        onDeleteEvent = { viewModel.deleteEvent(event.id) }
                     )
                     Spacer(modifier = Modifier.height(12.dp))
                 }
@@ -128,6 +142,7 @@ fun UserHeader(
     name: String,
     email: String,
     iniciales: String,
+    onOpenAccount: () -> Unit,
     onLeave: () -> Unit
 ) {
     Box(
@@ -141,7 +156,10 @@ fun UserHeader(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.clickable { onOpenAccount() }
+            ) {
                 Box(
                     modifier = Modifier
                         .size(44.dp)
@@ -162,16 +180,21 @@ fun UserHeader(
                     Text(text = email, color = Color.White.copy(alpha = 0.75f), fontSize = 12.sp)
                 }
             }
-            Button(
-                onClick = onLeave,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = AzulClaro,
-                    contentColor = Color.White
-                ),
-                shape = RoundedCornerShape(8.dp),
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
-            ) {
-                Text("Salir", fontSize = 13.sp)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                IconButton(onClick = onOpenAccount) {
+                    Icon(Icons.Filled.Settings, contentDescription = "Configuración de cuenta", tint = Color.White)
+                }
+                Button(
+                    onClick = onLeave,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = AzulClaro,
+                        contentColor = Color.White
+                    ),
+                    shape = RoundedCornerShape(8.dp),
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+                ) {
+                    Text("Salir", fontSize = 13.sp)
+                }
             }
         }
     }
@@ -180,10 +203,14 @@ fun UserHeader(
 @Composable
 fun EventCard(
     event: Event,
-    onToggleTask: (Int) -> Unit,
-    onToggleSubtask: (Int, Int) -> Unit
+    onToggleTask: (Long, Boolean) -> Unit,
+    onToggleSubtask: (Long, Boolean) -> Unit,
+    onOpenTask: (Long) -> Unit,
+    onAddTask: () -> Unit,
+    onOpenSummary: () -> Unit,
+    onDeleteEvent: () -> Unit = {}
 ) {
-    var expandedTaskIndex by remember { mutableStateOf(-1) }
+    var expandedTaskId by remember { mutableStateOf<Long?>(null) }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -210,7 +237,9 @@ fun EventCard(
                     modifier = Modifier.weight(1f)
                 )
                 Text(text = String.format("$%,d", event.estimated), fontSize = 16.sp, fontWeight = FontWeight.Medium, color = Azul)
-                Text(text = " ▾", color = Azul, fontSize = 14.sp)
+                IconButton(onClick = onDeleteEvent, modifier = Modifier.size(28.dp)) {
+                    Icon(Icons.Filled.Delete, contentDescription = "Eliminar evento", tint = Color.Gray, modifier = Modifier.size(16.dp))
+                }
             }
 
             Text(
@@ -229,15 +258,24 @@ fun EventCard(
                 color = Azul,
                 trackColor = Color(0xFFE0E0E0)
             )
-            Text(
-                text = "${event.taskCompletedCount} de ${event.taskCount} tareas",
-                fontSize = 11.sp,
-                color = Color.Gray,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 4.dp, bottom = 8.dp),
-                textAlign = TextAlign.End
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(top = 4.dp, bottom = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = "Ver resumen →",
+                    fontSize = 11.sp,
+                    color = Azul,
+                    fontWeight = FontWeight.Medium,
+                    modifier = Modifier.clickable { onOpenSummary() }
+                )
+                Text(
+                    text = "${event.taskCompletedCount} de ${event.taskCount} tareas",
+                    fontSize = 11.sp,
+                    color = Color.Gray,
+                    textAlign = TextAlign.End
+                )
+            }
 
             HorizontalDivider(color = Borde, thickness = 0.5.dp)
 
@@ -245,17 +283,19 @@ fun EventCard(
                 if (task.completed) {
                     TaskCompleted(
                         task = task,
-                        onClick = { onToggleTask(index) }
+                        onClick = { onToggleTask(task.id, !task.completed) },
+                        onManage = { onOpenTask(task.id) }
                     )
                 } else {
                     TaskRow(
                         task = task,
-                        expandida = expandedTaskIndex == index,
+                        expandida = expandedTaskId == task.id,
                         onClickTask = {
-                            expandedTaskIndex = if (expandedTaskIndex == index) -1 else index
+                            expandedTaskId = if (expandedTaskId == task.id) null else task.id
                         },
-                        onToggleTask = { onToggleTask(index) },
-                        onToggleSubtask = { subIndex -> onToggleSubtask(index, subIndex) }
+                        onToggleTask = { onToggleTask(task.id, !task.completed) },
+                        onToggleSubtask = { subtaskId, completed -> onToggleSubtask(subtaskId, completed) },
+                        onManageSubtasks = { onOpenTask(task.id) }
                     )
                 }
                 if (index < event.tasks.lastIndex) {
@@ -265,7 +305,7 @@ fun EventCard(
 
             Row(
                 modifier = Modifier
-                    .clickable { }
+                    .clickable { onAddTask() }
                     .padding(top = 10.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -295,7 +335,8 @@ fun TaskRow(
     expandida: Boolean,
     onClickTask: () -> Unit,
     onToggleTask: () -> Unit,
-    onToggleSubtask: (Int) -> Unit
+    onToggleSubtask: (Long, Boolean) -> Unit,
+    onManageSubtasks: () -> Unit
 ) {
     Column {
         Row(
@@ -321,16 +362,14 @@ fun TaskRow(
                     .weight(1f)
                     .clickable { onClickTask() }
             )
-            if (task.subtaskCount > 0) {
-                Text(
-                    text = "${task.subtaskCount} sub ›",
-                    fontSize = 12.sp,
-                    color = Azul,
-                    modifier = Modifier
-                        .padding(end = 4.dp)
-                        .clickable { onClickTask() }
-                )
-            }
+            Text(
+                text = if (task.subtaskCount > 0) "${task.subtaskCount} sub ›" else "Gestionar ›",
+                fontSize = 12.sp,
+                color = Azul,
+                modifier = Modifier
+                    .padding(end = 4.dp)
+                    .clickable { onManageSubtasks() }
+            )
             Text(text = String.format("$%,d", task.price), fontSize = 14.sp, fontWeight = FontWeight.Medium, color = Azul)
         }
 
@@ -345,7 +384,7 @@ fun TaskRow(
                 task.subtasks.forEachIndexed { i, subtask ->
                     SubtaskRow(
                         subtask = subtask,
-                        onToggle = { onToggleSubtask(i) }
+                        onToggle = { onToggleSubtask(subtask.id, !subtask.completed) }
                     )
                     if (i < task.subtasks.lastIndex) {
                         HorizontalDivider(color = Borde, thickness = 0.5.dp)
@@ -386,18 +425,18 @@ fun SubtaskRow(subtask: Subtask, onToggle: () -> Unit) {
             color = if (subtask.completed) Color.Gray else Color.Black,
             textDecoration = if (subtask.completed) TextDecoration.LineThrough else TextDecoration.None
         )
-        Text(text = String.format("$%,d", subtask.price), fontSize = 13.sp, color = Color.Gray)
+        Text(text = String.format("$%,d", subtask.estimatedPrice), fontSize = 13.sp, color = Color.Gray)
     }
 }
 
 @Composable
-fun TaskCompleted(task: Task, onClick: () -> Unit) {
+fun TaskCompleted(task: Task, onClick: () -> Unit, onManage: () -> Unit = {}) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(8.dp))
             .background(VerdeFondo)
-            .clickable { onClick() }
+            .clickable { onManage() }
             .padding(10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -405,7 +444,8 @@ fun TaskCompleted(task: Task, onClick: () -> Unit) {
             modifier = Modifier
                 .size(22.dp)
                 .clip(CircleShape)
-                .background(Verde),
+                .background(Verde)
+                .clickable { onClick() },
             contentAlignment = Alignment.Center
         ) {
             Text(text = "✓", color = Color.White, fontSize = 12.sp)

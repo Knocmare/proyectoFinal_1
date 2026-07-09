@@ -39,6 +39,8 @@ fun LoginScreen(
     onEmailChange: (String) -> Unit,
     password: String,
     onPasswordChange: (String) -> Unit,
+    errorMessage: String? = null,
+    isLoading: Boolean = false,
     onLoginClick: () -> Unit,
     onForgotPasswordClick: () -> Unit,
     onRegisterClick: () -> Unit
@@ -161,11 +163,23 @@ fun LoginScreen(
                     )
                 }
 
+                if (!errorMessage.isNullOrEmpty()) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = errorMessage,
+                        color = MaterialTheme.colorScheme.error,
+                        fontSize = 13.sp,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+
                 Spacer(modifier = Modifier.height(24.dp))
 
                 // Botón Ingresar
                 Button(
                     onClick = onLoginClick,
+                    enabled = !isLoading,
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(50.dp),

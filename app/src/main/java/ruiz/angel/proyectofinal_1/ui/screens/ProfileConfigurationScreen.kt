@@ -1,6 +1,7 @@
 package ruiz.angel.proyectofinal_1.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -35,13 +36,21 @@ import ruiz.angel.proyectofinal_1.ui.theme.FondoPantalla
 @Composable
 fun ProfileConfigurationScreen(
     name: String,
-    email: String
+    email: String,
+    passwordError: String? = null,
+    onBackClick: () -> Unit = {},
+    onLogout: () -> Unit = {},
+    onSaveProfile: (newName: String) -> Unit = {},
+    onChangePassword: (currentPassword: String, newPassword: String) -> Unit = { _, _ -> }
 ) {
     var name by remember { mutableStateOf(name) } //usuario.nombreCompleto
     var email by remember { mutableStateOf(email) } //usuario.email
-    var password by remember { mutableStateOf("") }
+    var currentPassword by remember { mutableStateOf("") }
     var newPassword by remember { mutableStateOf("") }
-    var errorMessage by remember { mutableStateOf("") }
+    var confirmPassword by remember { mutableStateOf("") }
+    var localError by remember { mutableStateOf("") }
+
+    val errorMessage = localError.ifEmpty { passwordError.orEmpty() }
 
     Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
         Column(
@@ -56,9 +65,14 @@ fun ProfileConfigurationScreen(
                     .padding(horizontal = 8.dp, vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                //TextButton() {
-                Text("←", fontSize = 20.sp, color = Color.Black)
-                //}
+                Text(
+                    text = "←",
+                    fontSize = 20.sp,
+                    color = Color.Black,
+                    modifier = Modifier
+                        .clickable { onBackClick() }
+                        .padding(end = 12.dp)
+                )
                 Text(
                     text = "Configuración",
                     fontSize = 20.sp,
@@ -76,14 +90,14 @@ fun ProfileConfigurationScreen(
                 )
                 OutlinedTextField(
                     value = name,
-                    onValueChange = { name = it; errorMessage = "" },
+                    onValueChange = { name = it; localError = "" },
                     label = { Text("Nombre Completo") },
                     modifier = Modifier.fillMaxWidth().padding(5.dp, 0.dp),
                     singleLine = true
                 )
                 OutlinedTextField(
                     value = email,
-                    onValueChange = { email = it; errorMessage = "" },
+                    onValueChange = { },
                     label = { Text("Correo Electrónico") },
                     modifier = Modifier.fillMaxWidth().padding(5.dp, 0.dp),
                     singleLine = true,
@@ -101,8 +115,8 @@ fun ProfileConfigurationScreen(
                     fontWeight = FontWeight.Normal
                 )
                 OutlinedTextField(
-                    value = password,
-                    onValueChange = { password = it; errorMessage = "" },
+                    value = currentPassword,
+                    onValueChange = { currentPassword = it; localError = "" },
                     label = { Text("Contraseña Actual") },
                     modifier = Modifier.fillMaxWidth().padding(5.dp, 0.dp),
                     singleLine = true,
@@ -110,8 +124,16 @@ fun ProfileConfigurationScreen(
                 )
                 OutlinedTextField(
                     value = newPassword,
-                    onValueChange = { newPassword = it; errorMessage = "" },
+                    onValueChange = { newPassword = it; localError = "" },
                     label = { Text("Nueva Contraseña") },
+                    modifier = Modifier.fillMaxWidth().padding(5.dp, 0.dp),
+                    singleLine = true,
+                    visualTransformation = PasswordVisualTransformation()
+                )
+                OutlinedTextField(
+                    value = confirmPassword,
+                    onValueChange = { confirmPassword = it; localError = "" },
+                    label = { Text("Confirmar Nueva Contraseña") },
                     modifier = Modifier.fillMaxWidth().padding(5.dp, 0.dp),
                     singleLine = true,
                     visualTransformation = PasswordVisualTransformation()
@@ -129,7 +151,15 @@ fun ProfileConfigurationScreen(
 
             Button(
                 onClick = {
-
+                    when {
+                        currentPassword.isBlank() -> localError = "Escribe tu contraseña actual"
+                        newPassword.length < 6 -> localError = "La nueva contraseña debe tener al menos 6 caracteres"
+                        newPassword != confirmPassword -> localError = "Las contraseñas no coinciden"
+                        else -> {
+                            localError = ""
+                            onChangePassword(currentPassword, newPassword)
+                        }
+                    }
                 },
                 modifier = Modifier.fillMaxWidth().padding(5.dp, 0.dp),
                 colors = ButtonDefaults.buttonColors(
@@ -145,9 +175,7 @@ fun ProfileConfigurationScreen(
 
             Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.Bottom) {
                 Button(
-                    onClick = {
-
-                    },
+                    onClick = onLogout,
                     modifier = Modifier.fillMaxWidth().padding(5.dp, 0.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = Color(0xFFa40000),
@@ -158,9 +186,7 @@ fun ProfileConfigurationScreen(
                     Text("Cerrar Sesión")
                 }
                 Button(
-                    onClick = {
-
-                    },
+                    onClick = { onSaveProfile(name) },
                     modifier = Modifier.fillMaxWidth().padding(5.dp, 0.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = Azul,

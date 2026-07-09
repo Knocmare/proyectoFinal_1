@@ -6,6 +6,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -17,31 +18,32 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import ruiz.angel.proyectofinal_1.data.models.PriceOption
 import ruiz.angel.proyectofinal_1.ui.theme.*
+import ruiz.angel.proyectofinal_1.viewModel.EventsViewModel
 import java.util.*
 
-data class PriceOption(
-    val id: String = UUID.randomUUID().toString(),
-    val place: String,
-    val cost: Double
-)
-
+/**
+ * Pantalla de comparación de precios de un artículo/servicio (subtarea) entre
+ * diferentes lugares. Las opciones se guardan en Room, asociadas a la subtarea.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PriceComparationScreen(
+    subtaskId: Long,
+    viewModel: EventsViewModel,
     onBackClick: () -> Unit = {}
 ) {
-    var itemName by remember { mutableStateOf("Salón de fiesta") }
+    LaunchedEffect(subtaskId) { viewModel.loadPriceOptions(subtaskId) }
+
+    val options = viewModel.priceOptionsState
+    val subtask = viewModel.eventsListState
+        .flatMap { it.tasks }
+        .flatMap { it.subtasks }
+        .firstOrNull { it.id == subtaskId }
+
     var placeName by remember { mutableStateOf("") }
     var costValue by remember { mutableStateOf("") }
-
-    var options by remember { 
-        mutableStateOf(listOf(
-            PriceOption(place = "Los Jardines", cost = 5000.0),
-            PriceOption(place = "Las Hermanas Salon", cost = 10550.0),
-            PriceOption(place = "Los Aguacates", cost = 12000.0)
-        )) 
-    }
 
     Scaffold(
         topBar = {
@@ -95,19 +97,11 @@ fun PriceComparationScreen(
                             color = TextGray
                         )
 
-                        Column {
-                            Text("Artículo o servicio", fontSize = 12.sp, color = TextGray)
-                            OutlinedTextField(
-                                value = itemName,
-                                onValueChange = { itemName = it },
-                                modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(8.dp),
-                                colors = OutlinedTextFieldDefaults.colors(
-                                    focusedBorderColor = PrimaryBlue,
-                                    unfocusedBorderColor = BorderGray
-                                )
-                            )
-                        }
+                        Text(
+                            subtask?.name ?: "Artículo o servicio",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Medium
+                        )
 
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -131,8 +125,8 @@ fun PriceComparationScreen(
                                 Text("Costo", fontSize = 12.sp, color = TextGray)
                                 OutlinedTextField(
                                     value = costValue,
-                                    onValueChange = { costValue = it },
-                                    placeholder = { Text("$ 0.00", fontSize = 14.sp) },
+                                    onValueChange = { costValue = it.filter { c -> c.isDigit() } },
+                                    placeholder = { Text("$ 0", fontSize = 14.sp) },
                                     modifier = Modifier.fillMaxWidth(),
                                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                     shape = RoundedCornerShape(8.dp),
@@ -146,9 +140,9 @@ fun PriceComparationScreen(
 
                         Button(
                             onClick = {
-                                if (placeName.isNotBlank() && costValue.isNotBlank()) {
-                                    val cost = costValue.toDoubleOrNull() ?: 0.0
-                                    options = options + PriceOption(place = placeName, cost = cost)
+                                val cost = costValue.toIntOrNull()
+                                if (placeName.isNotBlank() && cost != null) {
+                                    viewModel.addPriceOption(subtaskId, placeName, cost)
                                     placeName = ""
                                     costValue = ""
                                 }
@@ -183,7 +177,7 @@ fun PriceComparationScreen(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
-                                    itemName,
+                                    subtask?.name ?: "Opciones",
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 18.sp
                                 )
@@ -210,7 +204,12 @@ fun PriceComparationScreen(
                                     rank = index + 1,
                                     option = option,
                                     isBestPrice = option.cost == minPrice,
-                                    maxPrice = maxPrice
+                                    maxPrice = maxPrice,
+                                    onUse = {
+                                        viewModel.registerSubtaskPurchase(subtaskId, option.place, option.cost)
+                                        onBackClick()
+                                    },
+                                    onDelete = { viewModel.deletePriceOption(option.id) }
                                 )
                                 if (index < options.size - 1) {
                                     Spacer(modifier = Modifier.height(16.dp))
@@ -219,14 +218,14 @@ fun PriceComparationScreen(
 
                             HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp), color = BorderGray.copy(alpha = 0.5f))
 
-                            SummaryRow("Precio más alto", "$${String.format(Locale.getDefault(), "%,.0f", maxPrice)}", Color.Black)
-                            SummaryRow("Precio más bajo", "$${String.format(Locale.getDefault(), "%,.0f", minPrice)}", Verde)
-                            
+                            SummaryRow("Precio más alto", "$${String.format(Locale.getDefault(), "%,d", maxPrice)}", Color.Black)
+                            SummaryRow("Precio más bajo", "$${String.format(Locale.getDefault(), "%,d", minPrice)}", Verde)
+
                             val savings = maxPrice - minPrice
-                            val savingsPercentage = if (maxPrice > 0) (savings / maxPrice) * 100 else 0.0
+                            val savingsPercentage = if (maxPrice > 0) (savings.toDouble() / maxPrice) * 100 else 0.0
                             SummaryRow(
                                 "Ahorro potencial",
-                                "$${String.format(Locale.getDefault(), "%,.0f", savings)} (${String.format(Locale.getDefault(), "%.0f", savingsPercentage)}%)",
+                                "$${String.format(Locale.getDefault(), "%,d", savings)} (${String.format(Locale.getDefault(), "%.0f", savingsPercentage)}%)",
                                 Verde,
                                 isBold = true
                             )
@@ -234,7 +233,7 @@ fun PriceComparationScreen(
                     }
                 }
             }
-            
+
             item {
                 Spacer(modifier = Modifier.height(16.dp))
             }
@@ -247,7 +246,9 @@ fun ComparisonItem(
     rank: Int,
     option: PriceOption,
     isBestPrice: Boolean,
-    maxPrice: Double
+    maxPrice: Int,
+    onUse: () -> Unit = {},
+    onDelete: () -> Unit = {}
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -275,7 +276,7 @@ fun ComparisonItem(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(option.place, fontSize = 14.sp, fontWeight = FontWeight.Medium)
-                
+
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     if (isBestPrice) {
                         Surface(
@@ -292,17 +293,17 @@ fun ComparisonItem(
                         }
                     }
                     Text(
-                        "$${String.format(Locale.getDefault(), "%,.0f", option.cost)}",
+                        "$${String.format(Locale.getDefault(), "%,d", option.cost)}",
                         fontWeight = FontWeight.Bold,
                         fontSize = 16.sp,
                         color = if (isBestPrice) Verde else Color.Black
                     )
                 }
             }
-            
+
             Spacer(modifier = Modifier.height(6.dp))
 
-            val progress = if (maxPrice > 0) (option.cost / maxPrice).toFloat() else 0f
+            val progress = if (maxPrice > 0) (option.cost.toFloat() / maxPrice) else 0f
             LinearProgressIndicator(
                 progress = { progress },
                 modifier = Modifier
@@ -312,6 +313,17 @@ fun ComparisonItem(
                 trackColor = BackgroundGray,
                 strokeCap = StrokeCap.Round
             )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                TextButton(onClick = onUse) {
+                    Text("Usar esta opción", fontSize = 12.sp, color = PrimaryBlue, fontWeight = FontWeight.Medium)
+                }
+                IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
+                    Icon(Icons.Filled.Delete, contentDescription = "Eliminar opción", tint = Color.Gray)
+                }
+            }
         }
     }
 }
@@ -331,13 +343,5 @@ fun SummaryRow(label: String, value: String, valueColor: Color, isBold: Boolean 
             fontSize = 14.sp,
             fontWeight = if (isBold) FontWeight.Bold else FontWeight.Medium
         )
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun PriceComparationScreenPreview() {
-    MaterialTheme {
-        PriceComparationScreen()
     }
 }

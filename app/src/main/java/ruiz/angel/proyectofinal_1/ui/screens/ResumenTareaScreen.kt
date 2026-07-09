@@ -22,9 +22,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import ruiz.angel.proyectofinal_1.data.models.EstadoTarea
-import ruiz.angel.proyectofinal_1.data.models.Evento
-import ruiz.angel.proyectofinal_1.data.models.Subtarea
-import ruiz.angel.proyectofinal_1.data.models.Tarea
+import ruiz.angel.proyectofinal_1.data.models.Event
+import ruiz.angel.proyectofinal_1.data.models.Subtask
+import ruiz.angel.proyectofinal_1.data.models.Task
 import ruiz.angel.proyectofinal_1.data.models.ResumenTarea
 import ruiz.angel.proyectofinal_1.data.models.toResumen
 import ruiz.angel.proyectofinal_1.ui.theme.Azul
@@ -41,13 +41,15 @@ import ruiz.angel.proyectofinal_1.ui.theme.VerdeFondo
 
 @Composable
 fun EventSummaryScreen(
-    evento: Evento,
+    evento: Event,
     onBack: () -> Unit = {}
 ) {
     val resumenTareas = evento.toResumen()
-    val maxEstimado = (resumenTareas.maxOfOrNull { it.estimado } ?: 0).coerceAtLeast(1)
+    val maxEstimado = resumenTareas.maxOfOrNull { it.estimado } ?: 0
+    val maxGastado = resumenTareas.maxOfOrNull { it.gastado } ?: 0
+    val maxValor = maxOf(maxEstimado, maxGastado).coerceAtLeast(1)
     val porcentajeGlobal = if (evento.estimated == 0) 0f
-    else (evento.spent.toFloat() / evento.estimated.toFloat()).coerceIn(0f, 1f)
+    else (evento.spent.toFloat() / evento.estimated.toFloat())
 
     Scaffold { innerPadding ->
         Column(
@@ -57,8 +59,8 @@ fun EventSummaryScreen(
                 .padding(innerPadding)
         ) {
             SummaryTopBar(
-                eventoNombre = evento.nombre,
-                fecha = evento.fecha,
+                eventoNombre = evento.name,
+                fecha = evento.date,
                 onBack = onBack
             )
 
@@ -84,7 +86,7 @@ fun EventSummaryScreen(
 
                 ComparativeChartCard(
                     resumenTareas = resumenTareas,
-                    maxEstimado = maxEstimado
+                    maxValor = maxValor
                 )
 
                 BreakdownCard(resumenTareas = resumenTareas)
@@ -196,12 +198,12 @@ fun HeroBudgetCard(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text(text = "Ejecución del presupuesto", fontSize = 11.sp, color = Color.Gray)
+                Text(text = "Porcentaje de presupuesto", fontSize = 11.sp, color = Color.Gray)
                 Text(
                     text = "${(porcentaje * 100).toInt()}%",
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Medium,
-                    color = Azul
+                    color = if (porcentaje > 1f) Rojo else Azul
                 )
             }
             Spacer(modifier = Modifier.height(5.dp))
@@ -214,10 +216,10 @@ fun HeroBudgetCard(
             ) {
                 Box(
                     modifier = Modifier
-                        .fillMaxWidth(porcentaje)
+                        .fillMaxWidth(porcentaje.coerceIn(0f, 1f))
                         .fillMaxHeight()
                         .clip(RoundedCornerShape(5.dp))
-                        .background(Azul)
+                        .background(if (porcentaje > 1f) Rojo else Azul)
                 )
             }
 
@@ -287,7 +289,7 @@ fun RowScope.StatCard(icono: String, valor: String, etiqueta: String, color: Col
 @Composable
 fun ComparativeChartCard(
     resumenTareas: List<ResumenTarea>,
-    maxEstimado: Int
+    maxValor: Int
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -305,7 +307,7 @@ fun ComparativeChartCard(
             Spacer(modifier = Modifier.height(14.dp))
 
             resumenTareas.forEachIndexed { index, item ->
-                ChartRow(item = item, maxEstimado = maxEstimado)
+                ChartRow(item = item, maxValor = maxValor)
                 if (index < resumenTareas.lastIndex) {
                     Spacer(modifier = Modifier.height(12.dp))
                 }
@@ -318,17 +320,16 @@ fun ComparativeChartCard(
             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 LegendItem(color = Azul.copy(alpha = 0.25f), label = "Estimado")
                 LegendItem(color = Azul, label = "Gasto real")
-                LegendItem(color = Verde, label = "Completado")
+                LegendItem(color = Rojo, label = "Excedido")
             }
         }
     }
 }
 
 @Composable
-fun ChartRow(item: ResumenTarea, maxEstimado: Int) {
-    val barColor = if (item.estado == EstadoTarea.COMPLETADA) Verde
-    else if (item.estado == EstadoTarea.EXCEDIDA) Rojo
-    else item.color
+fun ChartRow(item: ResumenTarea, maxValor: Int) {
+    val excedida = item.estado == EstadoTarea.EXCEDIDA
+    val gastoRealColor = if (excedida) Rojo else Azul
 
     Column {
         Row(
@@ -347,39 +348,33 @@ fun ChartRow(item: ResumenTarea, maxEstimado: Int) {
                     text = String.format("$%,d", item.gastado),
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Medium,
-                    color = barColor
+                    color = gastoRealColor
                 )
             }
         }
         Spacer(modifier = Modifier.height(4.dp))
 
-        // Barra "estimado" - proporcional al máximo estimado del evento
-        val estimadoFraction = (item.estimado.toFloat() / maxEstimado.toFloat()).coerceIn(0f, 1f)
+        // Barra "estimado" - proporcional al mayor valor (estimado o gastado) del evento
+        val estimadoFraction = (item.estimado.toFloat() / maxValor.toFloat()).coerceIn(0f, 1f)
         Box(
             modifier = Modifier
                 .fillMaxWidth(estimadoFraction)
                 .height(7.dp)
                 .clip(RoundedCornerShape(4.dp))
-                .background(GrisFondo)
+                .background(Azul.copy(alpha = 0.25f))
         )
         Spacer(modifier = Modifier.height(3.dp))
 
-        // Barra "real" - proporcional al estimado de la propia tarea
+        // Barra "gasto real" - proporcional al mismo máximo, así se puede ver
+        // cuando el gasto real rebasa el estimado.
+        val gastadoFraction = (item.gastado.toFloat() / maxValor.toFloat()).coerceIn(0f, 1f)
         Box(
             modifier = Modifier
-                .fillMaxWidth(estimadoFraction)
+                .fillMaxWidth(gastadoFraction)
                 .height(7.dp)
                 .clip(RoundedCornerShape(4.dp))
-                .background(GrisFondo)
-        ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth(item.porcentaje)
-                    .fillMaxHeight()
-                    .clip(RoundedCornerShape(4.dp))
-                    .background(barColor)
-            )
-        }
+                .background(gastoRealColor)
+        )
     }
 }
 
@@ -486,43 +481,40 @@ fun BreakdownRow(item: ResumenTarea) {
 @Composable
 fun EventSummaryScreenPreview() {
     EventSummaryScreen(
-        evento = Evento(
-            nombre = "Boda",
-            fecha = "15 Jul 2026",
-            nombreUsuario = "Joel Ruben",
-            emailUsuario = "joel@itson.edu.mx",
-            inicialesUsuario = "JR",
-            tareas = listOf(
-                Tarea(
-                    nombre = "Salón de eventos",
-                    completada = false,
-                    subtareas = listOf(
-                        Subtarea("Cotización de salones", 0, completada = true),
-                        Subtarea("Reserva del salón", 5000, completada = true),
-                        Subtarea("Decoración", 7000, completada = false),
+        evento = Event(
+            name = "Boda",
+            date = "15 Jul 2026",
+            tasks = listOf(
+                Task(
+                    name = "Salón de eventos",
+                    completed = false,
+                    subtasks = listOf(
+                        Subtask(name = "Cotización de salones", estimatedPrice = 0, realPrice = 0, completed = true),
+                        Subtask(name = "Reserva del salón", estimatedPrice = 5000, realPrice = 5000, completed = true),
+                        Subtask(name = "Decoración", estimatedPrice = 7000, completed = false),
                     )
                 ),
-                Tarea(
-                    nombre = "Comida",
-                    completada = false,
-                    subtareas = listOf(
-                        Subtarea("Carne Azada", 9500, completada = true)
+                Task(
+                    name = "Comida",
+                    completed = false,
+                    subtasks = listOf(
+                        Subtask(name = "Carne Azada", estimatedPrice = 9500, realPrice = 9500, completed = true)
                     )
                 ),
-                Tarea(
-                    nombre = "Fotografía y video",
-                    completada = false,
-                    subtareas = listOf(
-                        Subtarea("Sesión de fotos", 1900, completada = true),
-                        Subtarea("Video del evento", 6600, completada = false)
+                Task(
+                    name = "Fotografía y video",
+                    completed = false,
+                    subtasks = listOf(
+                        Subtask(name = "Sesión de fotos", estimatedPrice = 1900, realPrice = 1900, completed = true),
+                        Subtask(name = "Video del evento", estimatedPrice = 6600, completed = false)
                     )
                 ),
-                Tarea(
-                    nombre = "Invitaciones",
-                    completada = true,
-                    subtareas = listOf(
-                        Subtarea("Crear invitaciones", 500, completada = true),
-                        Subtarea("Entregar invitaciones", 2000, completada = true)
+                Task(
+                    name = "Invitaciones",
+                    completed = true,
+                    subtasks = listOf(
+                        Subtask(name = "Crear invitaciones", estimatedPrice = 500, realPrice = 500, completed = true),
+                        Subtask(name = "Entregar invitaciones", estimatedPrice = 2000, realPrice = 2000, completed = true)
                     )
                 )
             )

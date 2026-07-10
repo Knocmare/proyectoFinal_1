@@ -48,6 +48,20 @@ class AuthViewModel(private val repository: UserRepository) : ViewModel() {
         }
     }
 
+    fun loginWithGoogle(idToken: String, onSuccess: () -> Unit) {
+        viewModelScope.launch {
+            isLoading = true
+            when (val result = repository.loginWithGoogle(idToken)) {
+                is AuthResult.Success -> {
+                    errorMessage = null
+                    onSuccess()
+                }
+                is AuthResult.Error -> errorMessage = result.message
+            }
+            isLoading = false
+        }
+    }
+
     fun register(name: String, email: String, password: String, confirmPassword: String, onSuccess: () -> Unit) {
         when {
             name.isBlank() || email.isBlank() || password.isBlank() -> {

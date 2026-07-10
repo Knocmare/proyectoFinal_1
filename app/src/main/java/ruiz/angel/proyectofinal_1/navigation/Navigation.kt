@@ -81,6 +81,13 @@ fun Navigation(
                 onRegisterClick = {
                     authViewModel.clearError()
                     navController.navigate(Register)
+                },
+                onGoogleLoginSuccess = { idToken: String ->
+                    authViewModel.loginWithGoogle(idToken) {
+                        navController.navigate(TaskList) {
+                            popUpTo(Login) { inclusive = true }
+                        }
+                    }
                 }
             )
         }

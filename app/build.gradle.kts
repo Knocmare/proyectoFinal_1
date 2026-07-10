@@ -3,6 +3,7 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     kotlin("plugin.serialization") version "2.0.21"
     id("com.google.devtools.ksp")
+    alias(libs.plugins.google.services)
 }
 
 android {
@@ -40,7 +41,11 @@ android {
 }
 
 dependencies {
+    implementation(libs.androidx.credentials)
+    implementation(libs.androidx.credentials.play.services.auth)
     implementation(libs.androidx.material3)
+    implementation(libs.firebase.auth)
+    implementation(libs.googleid)
     val nav_version = "2.9.8"
     // Jetpack Compose integration
     implementation("androidx.navigation:navigation-compose:${nav_version}")

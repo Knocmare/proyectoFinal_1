@@ -1,7 +1,8 @@
 package ruiz.angel.proyectofinal_1.ui.screens
 
+import android.app.Activity
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -18,6 +19,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -26,6 +28,14 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.credentials.CredentialManager
+import androidx.credentials.CustomCredential
+import androidx.credentials.GetCredentialRequest
+import com.google.android.libraries.identity.googleid.GetGoogleIdOption
+import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
+import com.google.firebase.auth.FirebaseAuth
+import kotlinx.coroutines.launch
+import ruiz.angel.proyectofinal_1.R
 import ruiz.angel.proyectofinal_1.ui.theme.*
 
 
@@ -43,8 +53,13 @@ fun LoginScreen(
     isLoading: Boolean = false,
     onLoginClick: () -> Unit,
     onForgotPasswordClick: () -> Unit,
-    onRegisterClick: () -> Unit
+    onRegisterClick: () -> Unit,
+    onGoogleLoginSuccess: (String) -> Unit
 ) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val credentialManager = remember { CredentialManager.create(context) }
+    val webClientId = "31436309248-uq5il8e52cjo4pun81umukrh07m4ju8d.apps.googleusercontent.com"
 
     Box(
         modifier = Modifier
@@ -52,7 +67,7 @@ fun LoginScreen(
             .background(BackgroundGray),
         contentAlignment = Alignment.Center
     ) {
-        // Tarjeta central que contiene el formulario
+
         Card(
             modifier = Modifier
                 .fillMaxWidth(0.9f)
@@ -189,6 +204,29 @@ fun LoginScreen(
                     Text(text = "Ingresar", fontSize = 16.sp, fontWeight = FontWeight.Medium)
                 }
 
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Botón Google
+                OutlinedButton(
+                    onClick = {
+
+                    },
+                    enabled = !isLoading,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(50.dp),
+                    shape = RoundedCornerShape(25.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.Black),
+                    border = BorderStroke(1.dp, BorderGray)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        Text(text = "Continuar con Google", fontSize = 16.sp, fontWeight = FontWeight.Medium)
+                    }
+                }
+
                 Spacer(modifier = Modifier.height(32.dp))
 
                 // Divisor
@@ -250,7 +288,8 @@ fun LoginScreenPreview() {
             onPasswordChange = {},
             onLoginClick = {},
             onForgotPasswordClick = {},
-            onRegisterClick = {}
+            onRegisterClick = {},
+            onGoogleLoginSuccess = {}
         )
     }
 }

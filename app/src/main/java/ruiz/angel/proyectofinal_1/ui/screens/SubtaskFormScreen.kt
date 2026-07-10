@@ -265,14 +265,7 @@ fun SubtaskFormScreen(
 
             if (isEditing) {
                 Row(modifier = Modifier.fillMaxWidth()) {
-                    OutlinedButton(
-                        onClick = onBack,
-                        modifier = Modifier.weight(1f).height(48.dp),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Rojo),
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Text("Cancelar")
-                    }
+
                     Spacer(modifier = Modifier.width(12.dp))
                     Button(
                         onClick = { trySave() },

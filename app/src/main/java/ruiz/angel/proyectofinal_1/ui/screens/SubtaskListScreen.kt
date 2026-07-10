@@ -1,6 +1,5 @@
 package ruiz.angel.proyectofinal_1.ui.screens
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -49,6 +48,8 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.tooling.preview.Preview
+import ruiz.angel.proyectofinal_1.ui.theme.ProyectoFinal_1Theme
 import ruiz.angel.proyectofinal_1.data.models.Subtask
 import ruiz.angel.proyectofinal_1.data.models.Task
 import ruiz.angel.proyectofinal_1.ui.theme.Azul
@@ -56,22 +57,72 @@ import ruiz.angel.proyectofinal_1.ui.theme.FondoPantalla
 import ruiz.angel.proyectofinal_1.ui.theme.FondoTarjeta
 import ruiz.angel.proyectofinal_1.ui.theme.Verde
 import ruiz.angel.proyectofinal_1.viewModel.EventsViewModel
+import ruiz.angel.proyectofinal_1.viewModel.SubtasksViewModel
+import ruiz.angel.proyectofinal_1.viewModel.TasksViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SubtaskListScreen(
     taskId: Long,
-    viewModel: EventsViewModel,
+    eventsViewModel: EventsViewModel,
+    tasksViewModel: TasksViewModel,
+    subtasksViewModel: SubtasksViewModel,
     onBackClick: () -> Unit,
     onCompareClick: (Long) -> Unit,
     onAddSubtask: (Long) -> Unit,
     onEditSubtask: (Long) -> Unit
 ) {
-    val task = viewModel.eventsListState
+    val task = eventsViewModel.eventsListState
         .flatMap { it.tasks }
         .firstOrNull { it.id == taskId }
 
+    SubtaskListContent(
+        task = task,
+        onBackClick = onBackClick,
+        onDeleteTask = {
+            tasksViewModel.deleteTask(taskId)
+            onBackClick()
+        },
+        onAddSubtask = onAddSubtask,
+        onToggleSubtask = { subtask ->
+            subtasksViewModel.toggleSubtask(subtask.id, !subtask.completed)
+        },
+        onEditSubtask = onEditSubtask,
+        onDeleteSubtask = { subtaskId ->
+            subtasksViewModel.deleteSubtask(subtaskId)
+        },
+        onCompareSubtask = onCompareClick,
+        onUpdateTask = { name, description, estimatedPrice ->
+            if (task != null) {
+                tasksViewModel.updateTask(
+                    taskId = task.id,
+                    eventId = task.eventId,
+                    name = name,
+                    description = description,
+                    estimatedPrice = estimatedPrice,
+                    realPrice = task.realPrice,
+                    completed = task.completed
+                )
+            }
+        }
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SubtaskListContent(
+    task: Task?,
+    onBackClick: () -> Unit,
+    onDeleteTask: (Long) -> Unit,
+    onAddSubtask: (Long) -> Unit,
+    onToggleSubtask: (Subtask) -> Unit,
+    onEditSubtask: (Long) -> Unit,
+    onDeleteSubtask: (Long) -> Unit,
+    onCompareSubtask: (Long) -> Unit,
+    onUpdateTask: (String, String, Int) -> Unit
+) {
     var showEditTaskDialog by remember { mutableStateOf(false) }
+    var subtaskToDelete by remember { mutableStateOf<Subtask?>(null) }
 
     Scaffold(
         topBar = {
@@ -88,8 +139,7 @@ fun SubtaskListScreen(
                             Icon(Icons.Filled.Edit, contentDescription = "Editar tarea")
                         }
                         IconButton(onClick = {
-                            viewModel.deleteTask(taskId)
-                            onBackClick()
+                            onDeleteTask(task.id)
                         }) {
                             Icon(Icons.Filled.Delete, contentDescription = "Eliminar tarea")
                         }
@@ -99,12 +149,14 @@ fun SubtaskListScreen(
             )
         },
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = { onAddSubtask(taskId) },
-                containerColor = Azul,
-                contentColor = Color.White
-            ) {
-                Icon(Icons.Filled.Add, contentDescription = "Agregar subtarea")
+            if (task != null) {
+                FloatingActionButton(
+                    onClick = { onAddSubtask(task.id) },
+                    containerColor = Azul,
+                    contentColor = Color.White
+                ) {
+                    Icon(Icons.Filled.Add, contentDescription = "Agregar subtarea")
+                }
             }
         },
         containerColor = FondoPantalla
@@ -138,10 +190,10 @@ fun SubtaskListScreen(
                     items(task.subtasks, key = { it.id }) { subtask ->
                         SubtaskManageRow(
                             subtask = subtask,
-                            onToggle = { viewModel.toggleSubtask(subtask.id, !subtask.completed) },
+                            onToggle = { onToggleSubtask(subtask) },
                             onEdit = { onEditSubtask(subtask.id) },
-                            onDelete = { viewModel.deleteSubtask(subtask.id) },
-                            onCompare = { onCompareClick(subtask.id) }
+                            onDelete = { subtaskToDelete = subtask },
+                            onCompare = { onCompareSubtask(subtask.id) }
                         )
                     }
                     item { Spacer(modifier = Modifier.height(80.dp)) }
@@ -155,16 +207,31 @@ fun SubtaskListScreen(
             task = task,
             onDismiss = { showEditTaskDialog = false },
             onConfirm = { name, description, estimatedPrice ->
-                viewModel.updateTask(
-                    taskId = task.id,
-                    eventId = task.eventId,
-                    name = name,
-                    description = description,
-                    estimatedPrice = estimatedPrice,
-                    realPrice = task.realPrice,
-                    completed = task.completed
-                )
+                onUpdateTask(name, description, estimatedPrice)
                 showEditTaskDialog = false
+            }
+        )
+    }
+
+    if (subtaskToDelete != null) {
+        AlertDialog(
+            onDismissRequest = { subtaskToDelete = null },
+            title = { Text("¿Eliminar subtarea?") },
+            text = { Text("¿Estás seguro de que deseas eliminar \"${subtaskToDelete?.name}\"? Esta acción no se puede deshacer.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        subtaskToDelete?.let { onDeleteSubtask(it.id) }
+                        subtaskToDelete = null
+                    }
+                ) {
+                    Text("Eliminar", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { subtaskToDelete = null }) {
+                    Text("Cancelar")
+                }
             }
         )
     }
@@ -308,4 +375,38 @@ private fun TaskFormDialog(
             TextButton(onClick = onDismiss) { Text("Cancelar") }
         }
     )
+}
+
+@Preview(showBackground = true)
+@Composable
+fun SubtaskListScreenPreview() {
+    val dummySubtasks = listOf(
+        Subtask(id = 1, taskId = 1, name = "Pastel de chocolate", description = "De 3 leches", estimatedPrice = 500, realPrice = 450, place = "Pastelería", completed = true),
+        Subtask(id = 2, taskId = 1, name = "Decoraciones globos", description = "Color azul y plata", estimatedPrice = 200, realPrice = null, place = "Tienda de fiestas", completed = false)
+    )
+
+    val dummyTask = Task(
+        id = 1,
+        eventId = 1,
+        name = "Comida y Bebida",
+        description = "Organizar el catering para 50 personas",
+        estimatedPrice = 1000,
+        realPrice = 0,
+        completed = false,
+        subtasks = dummySubtasks
+    )
+
+    ProyectoFinal_1Theme {
+        SubtaskListContent(
+            task = dummyTask,
+            onBackClick = {},
+            onDeleteTask = {},
+            onAddSubtask = {},
+            onToggleSubtask = {},
+            onEditSubtask = {},
+            onDeleteSubtask = {},
+            onCompareSubtask = {},
+            onUpdateTask = { _, _, _ -> }
+        )
+    }
 }

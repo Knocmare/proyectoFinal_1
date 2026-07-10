@@ -104,6 +104,7 @@ class AuthViewModel(private val repository: UserRepository) : ViewModel() {
 
     fun changePassword(userId: Long, currentPassword: String, newPassword: String, onSuccess: () -> Unit) {
         viewModelScope.launch {
+            isLoading = true
             when (val result = repository.changePassword(userId, currentPassword, newPassword)) {
                 is AuthResult.Success -> {
                     errorMessage = null
@@ -111,6 +112,7 @@ class AuthViewModel(private val repository: UserRepository) : ViewModel() {
                 }
                 is AuthResult.Error -> errorMessage = result.message
             }
+            isLoading = false
         }
     }
 

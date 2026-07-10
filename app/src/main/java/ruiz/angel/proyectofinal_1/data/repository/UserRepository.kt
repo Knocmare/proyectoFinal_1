@@ -1,5 +1,6 @@
 package ruiz.angel.proyectofinal_1.data.repository
 
+import com.google.firebase.auth.EmailAuthProvider
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
 import kotlinx.coroutines.flow.Flow
@@ -137,15 +138,27 @@ class UserRepository(
     }
 
     suspend fun changePassword(userId: Long, currentPassword: String, newPassword: String): AuthResult {
-        val user = userDao.getByIdOnce(userId)
-            ?: return AuthResult.Error("Usuario no encontrado")
-        if (!PasswordHasher.verify(currentPassword, user.salt, user.password)) {
-            return AuthResult.Error("La contraseña actual no es correcta")
+        return try {
+            val firebaseUser = FirebaseAuth.getInstance().currentUser 
+                ?: return AuthResult.Error("Sesión expirada. Por favor, inicia sesión de nuevo.")
+            
+            val email = firebaseUser.email ?: return AuthResult.Error("No se pudo obtener el correo del usuario.")
+
+            val credential = EmailAuthProvider.getCredential(email, currentPassword)
+            firebaseUser.reauthenticate(credential).await()
+
+            firebaseUser.updatePassword(newPassword).await()
+
+            val localUser = userDao.getByIdOnce(userId) ?: return AuthResult.Error("Usuario no encontrado localmente")
+            val newSalt = PasswordHasher.generateSalt()
+            val newHash = PasswordHasher.hash(newPassword, newSalt)
+            userDao.updatePassword(userId, newHash, newSalt)
+            
+            AuthResult.Success(localUser.toDomain())
+        } catch (e: Exception) {
+            e.printStackTrace()
+            AuthResult.Error("La contraseña actual es incorrecta o hubo un error de conexión.")
         }
-        val newSalt = PasswordHasher.generateSalt()
-        val newHash = PasswordHasher.hash(newPassword, newSalt)
-        userDao.updatePassword(userId, newHash, newSalt)
-        return AuthResult.Success(user.toDomain())
     }
 }
 

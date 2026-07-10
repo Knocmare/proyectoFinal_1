@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.sp
 import ruiz.angel.proyectofinal_1.data.models.PriceOption
 import ruiz.angel.proyectofinal_1.ui.theme.*
 import ruiz.angel.proyectofinal_1.viewModel.EventsViewModel
+import ruiz.angel.proyectofinal_1.viewModel.SubtasksViewModel
 import java.util.*
 
 /**
@@ -31,13 +32,14 @@ import java.util.*
 @Composable
 fun PriceComparationScreen(
     subtaskId: Long,
-    viewModel: EventsViewModel,
+    eventsViewModel: EventsViewModel,
+    subtasksViewModel: SubtasksViewModel,
     onBackClick: () -> Unit = {}
 ) {
-    LaunchedEffect(subtaskId) { viewModel.loadPriceOptions(subtaskId) }
+    LaunchedEffect(subtaskId) { subtasksViewModel.loadPriceOptions(subtaskId) }
 
-    val options = viewModel.priceOptionsState
-    val subtask = viewModel.eventsListState
+    val options = subtasksViewModel.priceOptionsState
+    val subtask = eventsViewModel.eventsListState
         .flatMap { it.tasks }
         .flatMap { it.subtasks }
         .firstOrNull { it.id == subtaskId }
@@ -142,7 +144,7 @@ fun PriceComparationScreen(
                             onClick = {
                                 val cost = costValue.toIntOrNull()
                                 if (placeName.isNotBlank() && cost != null) {
-                                    viewModel.addPriceOption(subtaskId, placeName, cost)
+                                    subtasksViewModel.addPriceOption(subtaskId, placeName, cost)
                                     placeName = ""
                                     costValue = ""
                                 }
@@ -206,10 +208,10 @@ fun PriceComparationScreen(
                                     isBestPrice = option.cost == minPrice,
                                     maxPrice = maxPrice,
                                     onUse = {
-                                        viewModel.registerSubtaskPurchase(subtaskId, option.place, option.cost)
+                                        subtasksViewModel.registerSubtaskPurchase(subtaskId, option.place, option.cost)
                                         onBackClick()
                                     },
-                                    onDelete = { viewModel.deletePriceOption(option.id) }
+                                    onDelete = { subtasksViewModel.deletePriceOption(option.id) }
                                 )
                                 if (index < options.size - 1) {
                                     Spacer(modifier = Modifier.height(16.dp))

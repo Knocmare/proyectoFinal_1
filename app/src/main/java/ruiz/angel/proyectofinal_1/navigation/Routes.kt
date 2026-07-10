@@ -15,6 +15,12 @@ object TaskList
 object Configuration
 
 @Serializable
+object EditProfile
+
+@Serializable
+object ChangePassword
+
+@Serializable
 object CreateEvent
 
 @Serializable

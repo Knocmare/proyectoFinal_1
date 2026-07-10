@@ -1,11 +1,15 @@
 package ruiz.angel.proyectofinal_1.ui.screens
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
@@ -28,6 +32,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -44,7 +49,9 @@ fun CreateEventScreen(
     onSave: (name: String, date: String) -> Unit
 ) {
     var name by remember { mutableStateOf("") }
-    var date by remember { mutableStateOf("") }
+    var day by remember { mutableStateOf("") }
+    var month by remember { mutableStateOf("") }
+    var year by remember { mutableStateOf("") }
     var error by remember { mutableStateOf<String?>(null) }
 
     Scaffold(
@@ -79,14 +86,37 @@ fun CreateEventScreen(
 
             Column(modifier = Modifier.padding(top = 16.dp)) {
                 Text("Fecha", fontSize = 13.sp, color = Color.Gray)
-                OutlinedTextField(
-                    value = date,
-                    onValueChange = { date = it; error = null },
-                    placeholder = { Text("Ej. 15 dic 2026") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    shape = RoundedCornerShape(8.dp)
-                )
+                Row(modifier = Modifier.fillMaxWidth()) {
+                    OutlinedTextField(
+                        value = day,
+                        onValueChange = { if (it.length <= 2) { day = it.filter { c -> c.isDigit() }; error = null } },
+                        placeholder = { Text("Día") },
+                        modifier = Modifier.weight(1f),
+                        singleLine = true,
+                        shape = RoundedCornerShape(8.dp),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    OutlinedTextField(
+                        value = month,
+                        onValueChange = { if (it.length <= 2) { month = it.filter { c -> c.isDigit() }; error = null } },
+                        placeholder = { Text("Mes") },
+                        modifier = Modifier.weight(1f),
+                        singleLine = true,
+                        shape = RoundedCornerShape(8.dp),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    OutlinedTextField(
+                        value = year,
+                        onValueChange = { if (it.length <= 4) { year = it.filter { c -> c.isDigit() }; error = null } },
+                        placeholder = { Text("Año") },
+                        modifier = Modifier.weight(1.2f),
+                        singleLine = true,
+                        shape = RoundedCornerShape(8.dp),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                    )
+                }
             }
 
             if (error != null) {
@@ -101,10 +131,19 @@ fun CreateEventScreen(
             Column(modifier = Modifier.padding(top = 28.dp)) {
                 Button(
                     onClick = {
+                        val d = day.toIntOrNull()
+                        val m = month.toIntOrNull()
+                        val y = year.toIntOrNull()
+
                         if (name.isBlank()) {
                             error = "Escribe un nombre para el evento"
+                        } else if (day.isBlank() || month.isBlank() || year.isBlank()) {
+                            error = "Completa la fecha"
+                        } else if (d == null || d !in 1..31 || m == null || m !in 1..12 || y == null || y < 2000) {
+                            error = "Fecha no válida"
                         } else {
-                            onSave(name.trim(), date.trim())
+                            val formattedDate = "$day/${month.padStart(2, '0')}/$year"
+                            onSave(name.trim(), formattedDate)
                         }
                     },
                     modifier = Modifier.fillMaxWidth().height(48.dp),

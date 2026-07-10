@@ -23,6 +23,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import ruiz.angel.proyectofinal_1.data.models.Event
+import androidx.compose.ui.tooling.preview.Preview
 import ruiz.angel.proyectofinal_1.data.models.Subtask
 import ruiz.angel.proyectofinal_1.data.models.Task
 import ruiz.angel.proyectofinal_1.ui.theme.Azul
@@ -34,10 +35,14 @@ import ruiz.angel.proyectofinal_1.ui.theme.FondoTarjeta
 import ruiz.angel.proyectofinal_1.ui.theme.Verde
 import ruiz.angel.proyectofinal_1.ui.theme.VerdeFondo
 import ruiz.angel.proyectofinal_1.viewModel.EventsViewModel
+import ruiz.angel.proyectofinal_1.viewModel.SubtasksViewModel
+import ruiz.angel.proyectofinal_1.viewModel.TasksViewModel
 
 @Composable
 fun TaskListScreen(
-    viewModel: EventsViewModel,
+    eventsViewModel: EventsViewModel,
+    tasksViewModel: TasksViewModel,
+    subtasksViewModel: SubtasksViewModel,
     name: String,
     email: String,
     iniciales: String,
@@ -48,8 +53,39 @@ fun TaskListScreen(
     onOpenAccount: () -> Unit = {},
     onLeave: () -> Unit = {}
 ) {
-    val events = viewModel.eventsListState
+    TaskListContent(
+        events = eventsViewModel.eventsListState,
+        name = name,
+        email = email,
+        iniciales = iniciales,
+        onCreateEvent = onCreateEvent,
+        onAddTask = onAddTask,
+        onOpenTask = onOpenTask,
+        onOpenSummary = onOpenSummary,
+        onOpenAccount = onOpenAccount,
+        onLeave = onLeave,
+        onToggleTask = { taskId, completed -> tasksViewModel.toggleTask(taskId, completed) },
+        onToggleSubtask = { subtaskId, completed -> subtasksViewModel.toggleSubtask(subtaskId, completed) },
+        onDeleteEvent = { eventId -> eventsViewModel.deleteEvent(eventId) }
+    )
+}
 
+@Composable
+fun TaskListContent(
+    events: List<Event>,
+    name: String,
+    email: String,
+    iniciales: String,
+    onCreateEvent: () -> Unit = {},
+    onAddTask: (Long) -> Unit = {},
+    onOpenTask: (Long) -> Unit = {},
+    onOpenSummary: (Long) -> Unit = {},
+    onOpenAccount: () -> Unit = {},
+    onLeave: () -> Unit = {},
+    onToggleTask: (Long, Boolean) -> Unit = { _, _ -> },
+    onToggleSubtask: (Long, Boolean) -> Unit = { _, _ -> },
+    onDeleteEvent: (Long) -> Unit = {}
+) {
     Scaffold(
         bottomBar = {
             Box(
@@ -123,12 +159,12 @@ fun TaskListScreen(
                 events.forEach { event ->
                     EventCard(
                         event = event,
-                        onToggleTask = { taskId, completed -> viewModel.toggleTask(taskId, completed) },
-                        onToggleSubtask = { subtaskId, completed -> viewModel.toggleSubtask(subtaskId, completed) },
+                        onToggleTask = onToggleTask,
+                        onToggleSubtask = onToggleSubtask,
                         onOpenTask = onOpenTask,
                         onAddTask = { onAddTask(event.id) },
                         onOpenSummary = { onOpenSummary(event.id) },
-                        onDeleteEvent = { viewModel.deleteEvent(event.id) }
+                        onDeleteEvent = { onDeleteEvent(event.id) }
                     )
                     Spacer(modifier = Modifier.height(12.dp))
                 }
@@ -184,17 +220,7 @@ fun UserHeader(
                 IconButton(onClick = onOpenAccount) {
                     Icon(Icons.Filled.Settings, contentDescription = "Configuración de cuenta", tint = Color.White)
                 }
-                Button(
-                    onClick = onLeave,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = AzulClaro,
-                        contentColor = Color.White
-                    ),
-                    shape = RoundedCornerShape(8.dp),
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
-                ) {
-                    Text("Salir", fontSize = 13.sp)
-                }
+
             }
         }
     }
@@ -360,7 +386,7 @@ fun TaskRow(
                 fontSize = 14.sp,
                 modifier = Modifier
                     .weight(1f)
-                    .clickable { onClickTask() }
+                    .clickable { onManageSubtasks() }
             )
             Text(
                 text = if (task.subtaskCount > 0) "${task.subtaskCount} sub ›" else "Gestionar ›",
@@ -471,3 +497,35 @@ fun BudgetColumn(label: String, valor: String, colorValor: Color) {
         Text(text = valor, fontSize = 14.sp, fontWeight = FontWeight.Medium, color = colorValor)
     }
 }
+
+@Preview(showBackground = true)
+@Composable
+fun TaskListScreenPreview() {
+    val dummySubtasks = listOf(
+        Subtask(id = 1, taskId = 1, name = "Pastel de chocolate", description = "", estimatedPrice = 500, realPrice = 0, place = "", completed = true),
+        Subtask(id = 2, taskId = 1, name = "Decoraciones globos", description = "", estimatedPrice = 200, realPrice = 0, place = "", completed = false)
+    )
+
+    val dummyTasks = listOf(
+        Task(id = 1, eventId = 1, name = "Comida y Bebida", description = "Organizar el catering", estimatedPrice = 1000, realPrice = 0, completed = false, subtasks = dummySubtasks),
+        Task(id = 2, eventId = 1, name = "Lugar del evento", description = "Renta de salón", estimatedPrice = 5000, realPrice = 5000, completed = true, subtasks = emptyList())
+    )
+
+    val dummyEvents = listOf(
+        Event(
+            id = 1,
+            userId = 1,
+            name = "Fiesta de Cumpleaños",
+            date = "25 Oct 2024",
+            tasks = dummyTasks
+        )
+    )
+
+    TaskListContent(
+        events = dummyEvents,
+        name = "Angel Ruiz",
+        email = "angel.ruiz@example.com",
+        iniciales = "AR"
+    )
+}
+

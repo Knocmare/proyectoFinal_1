@@ -18,20 +18,26 @@ import androidx.navigation.toRoute
 import ruiz.angel.proyectofinal_1.ui.screens.CreateEventScreen
 import ruiz.angel.proyectofinal_1.ui.screens.CreateTaskScreen
 import ruiz.angel.proyectofinal_1.ui.screens.EventSummaryScreen
+import ruiz.angel.proyectofinal_1.ui.screens.AccountScreen
+import ruiz.angel.proyectofinal_1.ui.screens.EditProfileScreen
+import ruiz.angel.proyectofinal_1.ui.screens.ChangePasswordScreen
 import ruiz.angel.proyectofinal_1.ui.screens.LoginScreen
 import ruiz.angel.proyectofinal_1.ui.screens.PriceComparationScreen
-import ruiz.angel.proyectofinal_1.ui.screens.ProfileConfigurationScreen
 import ruiz.angel.proyectofinal_1.ui.screens.RegisterScreen
 import ruiz.angel.proyectofinal_1.ui.screens.SubtaskFormScreen
 import ruiz.angel.proyectofinal_1.ui.screens.SubtaskListScreen
 import ruiz.angel.proyectofinal_1.ui.screens.TaskListScreen
 import ruiz.angel.proyectofinal_1.viewModel.AuthViewModel
 import ruiz.angel.proyectofinal_1.viewModel.EventsViewModel
+import ruiz.angel.proyectofinal_1.viewModel.TasksViewModel
+import ruiz.angel.proyectofinal_1.viewModel.SubtasksViewModel
 
 @Composable
 fun Navigation(
     innerPadding: PaddingValues,
     eventsViewModel: EventsViewModel,
+    tasksViewModel: TasksViewModel,
+    subtasksViewModel: SubtasksViewModel,
     authViewModel: AuthViewModel
 ) {
     val navController = rememberNavController()
@@ -44,7 +50,6 @@ fun Navigation(
     var registerPassword by remember { mutableStateOf("") }
     var registerConfirmPassword by remember { mutableStateOf("") }
 
-    // Auto-login: si ya hay una sesión guardada (DataStore), saltamos el Login.
     LaunchedEffect(currentUser) {
         val user = currentUser
         if (user != null) {
@@ -127,7 +132,9 @@ fun Navigation(
                 }
             } else {
                 TaskListScreen(
-                    viewModel = eventsViewModel,
+                    eventsViewModel = eventsViewModel,
+                    tasksViewModel = tasksViewModel,
+                    subtasksViewModel = subtasksViewModel,
                     name = user.name,
                     email = user.email,
                     iniciales = user.name.take(1).uppercase(),
@@ -147,24 +154,51 @@ fun Navigation(
 
         composable<Configuration> {
             val user = currentUser
-            ProfileConfigurationScreen(
+            AccountScreen(
                 name = user?.name.orEmpty(),
                 email = user?.email.orEmpty(),
+                iniciales = user?.name?.take(1)?.uppercase().orEmpty(),
+                onBackClick = { navController.popBackStack() },
+                onEditProfileClick = { navController.navigate(EditProfile) },
+                onChangePasswordClick = { navController.navigate(ChangePassword) },
+                onLogoutClick = {
+                    authViewModel.logout {
+                        navController.navigate(Login) { popUpTo(0) }
+                    }
+                }
+            )
+        }
+
+        composable<EditProfile> {
+            val user = currentUser
+            EditProfileScreen(
+                initialName = user?.name.orEmpty(),
+                email = user?.email.orEmpty(),
+                onBackClick = { navController.popBackStack() },
+                onSaveProfile = { newName ->
+                    user?.let {
+                        authViewModel.updateName(it.id, newName)
+                        navController.popBackStack()
+                    }
+                }
+            )
+        }
+
+        composable<ChangePassword> {
+            val user = currentUser
+            ChangePasswordScreen(
                 passwordError = authViewModel.errorMessage,
+                isLoading = authViewModel.isLoading,
                 onBackClick = {
                     authViewModel.clearError()
                     navController.popBackStack()
                 },
-                onLogout = {
-                    authViewModel.logout {
-                        navController.navigate(Login) { popUpTo(0) }
-                    }
-                },
-                onSaveProfile = { newName ->
-                    user?.let { authViewModel.updateName(it.id, newName) }
-                },
                 onChangePassword = { current, new ->
-                    user?.let { authViewModel.changePassword(it.id, current, new) {} }
+                    user?.let {
+                        authViewModel.changePassword(it.id, current, new) {
+                            navController.popBackStack()
+                        }
+                    }
                 }
             )
         }
@@ -185,7 +219,7 @@ fun Navigation(
             CreateTaskScreen(
                 onCancel = { navController.popBackStack() },
                 onSave = { taskName, description, estimatedPrice ->
-                    eventsViewModel.createTask(route.eventId, taskName, description, estimatedPrice)
+                    tasksViewModel.createTask(route.eventId, taskName, description, estimatedPrice)
                     navController.popBackStack()
                 }
             )
@@ -195,7 +229,9 @@ fun Navigation(
             val route: SubtaskList = backStackEntry.toRoute()
             SubtaskListScreen(
                 taskId = route.taskId,
-                viewModel = eventsViewModel,
+                eventsViewModel = eventsViewModel,
+                tasksViewModel = tasksViewModel,
+                subtasksViewModel = subtasksViewModel,
                 onBackClick = { navController.popBackStack() },
                 onCompareClick = { subtaskId -> navController.navigate(PriceComparisonRoute(subtaskId)) },
                 onAddSubtask = { taskId -> navController.navigate(SubtaskForm(taskId = taskId)) },
@@ -222,9 +258,9 @@ fun Navigation(
                 } else null,
                 onSave = { name, description, estimatedPrice, realPrice, place ->
                     if (existingSubtask == null) {
-                        eventsViewModel.createSubtask(route.taskId, name, description, estimatedPrice)
+                        subtasksViewModel.createSubtask(route.taskId, name, description, estimatedPrice)
                     } else {
-                        eventsViewModel.updateSubtask(
+                        subtasksViewModel.updateSubtask(
                             subtaskId = existingSubtask.id,
                             taskId = route.taskId,
                             name = name,
@@ -244,7 +280,8 @@ fun Navigation(
             val route: PriceComparisonRoute = backStackEntry.toRoute()
             PriceComparationScreen(
                 subtaskId = route.subtaskId,
-                viewModel = eventsViewModel,
+                eventsViewModel = eventsViewModel,
+                subtasksViewModel = subtasksViewModel,
                 onBackClick = { navController.popBackStack() }
             )
         }

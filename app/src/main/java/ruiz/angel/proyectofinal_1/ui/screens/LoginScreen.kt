@@ -59,7 +59,7 @@ fun LoginScreen(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val credentialManager = remember { CredentialManager.create(context) }
-    val webClientId = "31436309248-uq5il8e52cjo4pun81umukrh07m4ju8d.apps.googleusercontent.com"
+    val webClientId = "31436309248-2nqj6g86i6h7163tsito6hlgrtjk7lln.apps.googleusercontent.com"
 
     Box(
         modifier = Modifier
@@ -82,12 +82,10 @@ fun LoginScreen(
                     .padding(horizontal = 24.dp, vertical = 32.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Icono superior
                 HeaderIcon()
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // Títulos
                 Text(
                     text = "Planeador de Eventos\nITSON",
                     fontSize = 22.sp,
@@ -107,7 +105,6 @@ fun LoginScreen(
 
                 Spacer(modifier = Modifier.height(32.dp))
 
-                // Campo de Correo Electrónico
                 OutlinedTextField(
                     value = email,
                     onValueChange = onEmailChange,
@@ -131,7 +128,6 @@ fun LoginScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Campo de Contraseña
                 var passwordVisible by remember { mutableStateOf(false) }
 
                 OutlinedTextField(
@@ -162,7 +158,6 @@ fun LoginScreen(
                     )
                 )
 
-                // Enlace olvide contraseña
                 Box(
                     modifier = Modifier.fillMaxWidth(),
                     contentAlignment = Alignment.CenterEnd
@@ -191,7 +186,6 @@ fun LoginScreen(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // Botón Ingresar
                 Button(
                     onClick = onLoginClick,
                     enabled = !isLoading,
@@ -206,10 +200,36 @@ fun LoginScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Botón Google
                 OutlinedButton(
                     onClick = {
+                        scope.launch {
+                            try {
+                                val googleIdOption = GetGoogleIdOption.Builder()
+                                    .setFilterByAuthorizedAccounts(false)
+                                    .setServerClientId(webClientId)
+                                    .setAutoSelectEnabled(false)
+                                    .build()
 
+                                val request = GetCredentialRequest.Builder()
+                                    .addCredentialOption(googleIdOption)
+                                    .build()
+
+                                val result = credentialManager.getCredential(
+                                    context = context,
+                                    request = request
+                                )
+
+                                val credential = result.credential
+                                if (credential is CustomCredential && 
+                                    credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL) {
+                                    
+                                    val googleIdTokenCredential = GoogleIdTokenCredential.createFrom(credential.data)
+                                    onGoogleLoginSuccess(googleIdTokenCredential.idToken)
+                                }
+                            } catch (e: Exception) {
+                                e.printStackTrace()
+                            }
+                        }
                     },
                     enabled = !isLoading,
                     modifier = Modifier
@@ -229,12 +249,10 @@ fun LoginScreen(
 
                 Spacer(modifier = Modifier.height(32.dp))
 
-                // Divisor
                 HorizontalDivider(color = BorderGray.copy(alpha = 0.5f), thickness = 1.dp)
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // Enlace de registro
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.Center

@@ -24,6 +24,9 @@ data class CreateTask(val eventId: Long)
 data class SubtaskList(val taskId: Long)
 
 @Serializable
+data class SubtaskForm(val taskId: Long, val subtaskId: Long = -1L)
+
+@Serializable
 data class PriceComparisonRoute(val subtaskId: Long)
 
 @Serializable

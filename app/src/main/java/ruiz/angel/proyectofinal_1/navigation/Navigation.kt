@@ -22,6 +22,7 @@ import ruiz.angel.proyectofinal_1.ui.screens.LoginScreen
 import ruiz.angel.proyectofinal_1.ui.screens.PriceComparationScreen
 import ruiz.angel.proyectofinal_1.ui.screens.ProfileConfigurationScreen
 import ruiz.angel.proyectofinal_1.ui.screens.RegisterScreen
+import ruiz.angel.proyectofinal_1.ui.screens.SubtaskFormScreen
 import ruiz.angel.proyectofinal_1.ui.screens.SubtaskListScreen
 import ruiz.angel.proyectofinal_1.ui.screens.TaskListScreen
 import ruiz.angel.proyectofinal_1.viewModel.AuthViewModel
@@ -83,6 +84,7 @@ fun Navigation(
                 }
             )
         }
+
         composable<Register> {
             RegisterScreen(
                 name = registerName,
@@ -109,6 +111,7 @@ fun Navigation(
                 }
             )
         }
+
         composable<TaskList> {
             val user = currentUser
             if (user == null) {
@@ -134,6 +137,7 @@ fun Navigation(
                 )
             }
         }
+
         composable<Configuration> {
             val user = currentUser
             ProfileConfigurationScreen(
@@ -157,6 +161,7 @@ fun Navigation(
                 }
             )
         }
+
         composable<CreateEvent> {
             val user = currentUser
             CreateEventScreen(
@@ -167,6 +172,7 @@ fun Navigation(
                 }
             )
         }
+
         composable<CreateTask> { backStackEntry ->
             val route: CreateTask = backStackEntry.toRoute()
             CreateTaskScreen(
@@ -177,15 +183,56 @@ fun Navigation(
                 }
             )
         }
+
         composable<SubtaskList> { backStackEntry ->
             val route: SubtaskList = backStackEntry.toRoute()
             SubtaskListScreen(
                 taskId = route.taskId,
                 viewModel = eventsViewModel,
                 onBackClick = { navController.popBackStack() },
-                onCompareClick = { subtaskId -> navController.navigate(PriceComparisonRoute(subtaskId)) }
+                onCompareClick = { subtaskId -> navController.navigate(PriceComparisonRoute(subtaskId)) },
+                onAddSubtask = { taskId -> navController.navigate(SubtaskForm(taskId = taskId)) },
+                onEditSubtask = { subtaskId ->
+                    navController.navigate(SubtaskForm(taskId = route.taskId, subtaskId = subtaskId))
+                }
             )
         }
+
+        composable<SubtaskForm> { backStackEntry ->
+            val route: SubtaskForm = backStackEntry.toRoute()
+            val task = eventsViewModel.eventsListState.firstOrNull { it.tasks.any { t -> t.id == route.taskId } }
+                ?.tasks?.firstOrNull { it.id == route.taskId }
+            val existingSubtask = if (route.subtaskId >= 0) {
+                task?.subtasks?.firstOrNull { it.id == route.subtaskId }
+            } else null
+
+            SubtaskFormScreen(
+                taskName = task?.name.orEmpty(),
+                initial = existingSubtask,
+                onBack = { navController.popBackStack() },
+                onCompareClick = if (existingSubtask != null) {
+                    { navController.navigate(PriceComparisonRoute(existingSubtask.id)) }
+                } else null,
+                onSave = { name, description, estimatedPrice, realPrice, place ->
+                    if (existingSubtask == null) {
+                        eventsViewModel.createSubtask(route.taskId, name, description, estimatedPrice)
+                    } else {
+                        eventsViewModel.updateSubtask(
+                            subtaskId = existingSubtask.id,
+                            taskId = route.taskId,
+                            name = name,
+                            description = description,
+                            estimatedPrice = estimatedPrice,
+                            realPrice = realPrice,
+                            place = place.ifBlank { existingSubtask.place },
+                            completed = existingSubtask.completed
+                        )
+                    }
+                    navController.popBackStack()
+                }
+            )
+        }
+
         composable<PriceComparisonRoute> { backStackEntry ->
             val route: PriceComparisonRoute = backStackEntry.toRoute()
             PriceComparationScreen(
@@ -194,6 +241,7 @@ fun Navigation(
                 onBackClick = { navController.popBackStack() }
             )
         }
+
         composable<Summary> { backStackEntry ->
             val route: Summary = backStackEntry.toRoute()
             val event = eventsViewModel.eventsListState.firstOrNull { it.id == route.eventId }

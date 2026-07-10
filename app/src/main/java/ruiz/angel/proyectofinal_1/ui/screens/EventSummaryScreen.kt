@@ -45,9 +45,11 @@ fun EventSummaryScreen(
     onBack: () -> Unit = {}
 ) {
     val resumenTareas = evento.toResumen()
-    val maxEstimado = (resumenTareas.maxOfOrNull { it.estimado } ?: 0).coerceAtLeast(1)
+    val maxEstimado = resumenTareas.maxOfOrNull { it.estimado } ?: 0
+    val maxGastado = resumenTareas.maxOfOrNull { it.gastado } ?: 0
+    val maxValor = maxOf(maxEstimado, maxGastado).coerceAtLeast(1)
     val porcentajeGlobal = if (evento.estimated == 0) 0f
-    else (evento.spent.toFloat() / evento.estimated.toFloat()).coerceIn(0f, 1f)
+    else (evento.spent.toFloat() / evento.estimated.toFloat())
 
     Scaffold { innerPadding ->
         Column(
@@ -84,7 +86,7 @@ fun EventSummaryScreen(
 
                 ComparativeChartCard(
                     resumenTareas = resumenTareas,
-                    maxEstimado = maxEstimado
+                    maxValor = maxValor
                 )
 
                 BreakdownCard(resumenTareas = resumenTareas)
@@ -196,12 +198,12 @@ fun HeroBudgetCard(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text(text = "Ejecución del presupuesto", fontSize = 11.sp, color = Color.Gray)
+                Text(text = "Porcentaje de presupuesto", fontSize = 11.sp, color = Color.Gray)
                 Text(
                     text = "${(porcentaje * 100).toInt()}%",
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Medium,
-                    color = Azul
+                    color = if (porcentaje > 1f) Rojo else Azul
                 )
             }
             Spacer(modifier = Modifier.height(5.dp))
@@ -214,10 +216,10 @@ fun HeroBudgetCard(
             ) {
                 Box(
                     modifier = Modifier
-                        .fillMaxWidth(porcentaje)
+                        .fillMaxWidth(porcentaje.coerceIn(0f, 1f))
                         .fillMaxHeight()
                         .clip(RoundedCornerShape(5.dp))
-                        .background(Azul)
+                        .background(if (porcentaje > 1f) Rojo else Azul)
                 )
             }
 
@@ -287,7 +289,7 @@ fun RowScope.StatCard(icono: String, valor: String, etiqueta: String, color: Col
 @Composable
 fun ComparativeChartCard(
     resumenTareas: List<ResumenTarea>,
-    maxEstimado: Int
+    maxValor: Int
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -305,7 +307,7 @@ fun ComparativeChartCard(
             Spacer(modifier = Modifier.height(14.dp))
 
             resumenTareas.forEachIndexed { index, item ->
-                ChartRow(item = item, maxEstimado = maxEstimado)
+                ChartRow(item = item, maxValor = maxValor)
                 if (index < resumenTareas.lastIndex) {
                     Spacer(modifier = Modifier.height(12.dp))
                 }
@@ -318,17 +320,16 @@ fun ComparativeChartCard(
             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 LegendItem(color = Azul.copy(alpha = 0.25f), label = "Estimado")
                 LegendItem(color = Azul, label = "Gasto real")
-                LegendItem(color = Verde, label = "Completado")
+                LegendItem(color = Rojo, label = "Excedido")
             }
         }
     }
 }
 
 @Composable
-fun ChartRow(item: ResumenTarea, maxEstimado: Int) {
-    val barColor = if (item.estado == EstadoTarea.COMPLETADA) Verde
-    else if (item.estado == EstadoTarea.EXCEDIDA) Rojo
-    else item.color
+fun ChartRow(item: ResumenTarea, maxValor: Int) {
+    val excedida = item.estado == EstadoTarea.EXCEDIDA
+    val gastoRealColor = if (excedida) Rojo else Azul
 
     Column {
         Row(
@@ -347,39 +348,33 @@ fun ChartRow(item: ResumenTarea, maxEstimado: Int) {
                     text = String.format("$%,d", item.gastado),
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Medium,
-                    color = barColor
+                    color = gastoRealColor
                 )
             }
         }
         Spacer(modifier = Modifier.height(4.dp))
 
-        // Barra "estimado" - proporcional al máximo estimado del evento
-        val estimadoFraction = (item.estimado.toFloat() / maxEstimado.toFloat()).coerceIn(0f, 1f)
+        // Barra "estimado" - proporcional al mayor valor (estimado o gastado) del evento
+        val estimadoFraction = (item.estimado.toFloat() / maxValor.toFloat()).coerceIn(0f, 1f)
         Box(
             modifier = Modifier
                 .fillMaxWidth(estimadoFraction)
                 .height(7.dp)
                 .clip(RoundedCornerShape(4.dp))
-                .background(GrisFondo)
+                .background(Azul.copy(alpha = 0.25f))
         )
         Spacer(modifier = Modifier.height(3.dp))
 
-        // Barra "real" - proporcional al estimado de la propia tarea
+        // Barra "gasto real" - proporcional al mismo máximo, así se puede ver
+        // cuando el gasto real rebasa el estimado.
+        val gastadoFraction = (item.gastado.toFloat() / maxValor.toFloat()).coerceIn(0f, 1f)
         Box(
             modifier = Modifier
-                .fillMaxWidth(estimadoFraction)
+                .fillMaxWidth(gastadoFraction)
                 .height(7.dp)
                 .clip(RoundedCornerShape(4.dp))
-                .background(GrisFondo)
-        ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth(item.porcentaje)
-                    .fillMaxHeight()
-                    .clip(RoundedCornerShape(4.dp))
-                    .background(barColor)
-            )
-        }
+                .background(gastoRealColor)
+        )
     }
 }
 

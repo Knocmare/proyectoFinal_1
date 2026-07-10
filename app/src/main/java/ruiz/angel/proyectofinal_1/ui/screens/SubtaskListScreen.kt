@@ -63,14 +63,14 @@ fun SubtaskListScreen(
     taskId: Long,
     viewModel: EventsViewModel,
     onBackClick: () -> Unit,
-    onCompareClick: (Long) -> Unit
+    onCompareClick: (Long) -> Unit,
+    onAddSubtask: (Long) -> Unit,
+    onEditSubtask: (Long) -> Unit
 ) {
     val task = viewModel.eventsListState
         .flatMap { it.tasks }
         .firstOrNull { it.id == taskId }
 
-    var showSubtaskDialog by remember { mutableStateOf(false) }
-    var editingSubtask by remember { mutableStateOf<Subtask?>(null) }
     var showEditTaskDialog by remember { mutableStateOf(false) }
 
     Scaffold(
@@ -100,7 +100,7 @@ fun SubtaskListScreen(
         },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = { editingSubtask = null; showSubtaskDialog = true },
+                onClick = { onAddSubtask(taskId) },
                 containerColor = Azul,
                 contentColor = Color.White
             ) {
@@ -139,7 +139,7 @@ fun SubtaskListScreen(
                         SubtaskManageRow(
                             subtask = subtask,
                             onToggle = { viewModel.toggleSubtask(subtask.id, !subtask.completed) },
-                            onEdit = { editingSubtask = subtask; showSubtaskDialog = true },
+                            onEdit = { onEditSubtask(subtask.id) },
                             onDelete = { viewModel.deleteSubtask(subtask.id) },
                             onCompare = { onCompareClick(subtask.id) }
                         )
@@ -148,31 +148,6 @@ fun SubtaskListScreen(
                 }
             }
         }
-    }
-
-    if (showSubtaskDialog) {
-        SubtaskFormDialog(
-            initial = editingSubtask,
-            onDismiss = { showSubtaskDialog = false },
-            onConfirm = { name, description, estimatedPrice ->
-                val current = editingSubtask
-                if (current == null) {
-                    viewModel.createSubtask(taskId, name, description, estimatedPrice)
-                } else {
-                    viewModel.updateSubtask(
-                        subtaskId = current.id,
-                        taskId = taskId,
-                        name = name,
-                        description = description,
-                        estimatedPrice = estimatedPrice,
-                        realPrice = current.realPrice,
-                        place = current.place,
-                        completed = current.completed
-                    )
-                }
-                showSubtaskDialog = false
-            }
-        )
     }
 
     if (showEditTaskDialog && task != null) {
@@ -276,66 +251,6 @@ private fun SubtaskManageRow(
 }
 
 @Composable
-private fun SubtaskFormDialog(
-    initial: Subtask?,
-    onDismiss: () -> Unit,
-    onConfirm: (name: String, description: String, estimatedPrice: Int) -> Unit
-) {
-    var name by remember { mutableStateOf(initial?.name.orEmpty()) }
-    var description by remember { mutableStateOf(initial?.description.orEmpty()) }
-    var estimatedPrice by remember { mutableStateOf(if (initial != null) initial.estimatedPrice.toString() else "") }
-    var error by remember { mutableStateOf<String?>(null) }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(if (initial == null) "Agregar subtarea" else "Editar subtarea") },
-        text = {
-            Column {
-                OutlinedTextField(
-                    value = name,
-                    onValueChange = { name = it; error = null },
-                    label = { Text("Nombre") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                OutlinedTextField(
-                    value = description,
-                    onValueChange = { description = it },
-                    label = { Text("Descripción") },
-                    modifier = Modifier.fillMaxWidth(),
-                    minLines = 2
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                OutlinedTextField(
-                    value = estimatedPrice,
-                    onValueChange = { estimatedPrice = it.filter { c -> c.isDigit() }; error = null },
-                    label = { Text("Costo estimado") },
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    modifier = Modifier.fillMaxWidth()
-                )
-                if (error != null) {
-                    Text(error!!, color = MaterialTheme.colorScheme.error, fontSize = 12.sp)
-                }
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = {
-                if (name.isBlank()) {
-                    error = "Escribe un nombre"
-                } else {
-                    onConfirm(name.trim(), description.trim(), estimatedPrice.toIntOrNull() ?: 0)
-                }
-            }) { Text("Guardar") }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancelar") }
-        }
-    )
-}
-
-@Composable
 private fun TaskFormDialog(
     task: Task,
     onDismiss: () -> Unit,
@@ -394,4 +309,3 @@ private fun TaskFormDialog(
         }
     )
 }
-

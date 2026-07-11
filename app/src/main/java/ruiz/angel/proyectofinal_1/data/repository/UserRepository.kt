@@ -56,42 +56,61 @@ class UserRepository(
 
     suspend fun login(email: String, password: String): AuthResult {
         val normalizedEmail = email.trim().lowercase()
-        return try {
-            // 1. Iniciar sesión en Firebase Auth
+        
+        // 1. Intentar iniciar sesión en Firebase Auth (Nube)
+        try {
             val authResult = FirebaseAuth.getInstance()
                 .signInWithEmailAndPassword(normalizedEmail, password)
                 .await()
             val firebaseUser = authResult.user
 
             if (firebaseUser != null) {
-                // 2. Verificar o crear usuario en Room
+                // Sincronizar con Room
                 var localUser = userDao.findByEmail(normalizedEmail)
+                
+                // Actualizar o crear usuario local con el hash de la contraseña para permitir login offline futuro
+                val salt = PasswordHasher.generateSalt()
+                val hash = PasswordHasher.hash(password, salt)
+                
                 if (localUser == null) {
-                    // Si el usuario existe en Firebase pero no en Room (ej. nueva instalación)
                     val userId = userDao.insertUser(
                         UserEntity(
                             name = firebaseUser.displayName ?: "Usuario",
                             email = normalizedEmail,
-                            password = "", // No guardamos pass real de Firebase en local por seguridad
-                            salt = ""
+                            password = hash, 
+                            salt = salt
                         )
                     )
                     localUser = userDao.getByIdOnce(userId)
+                } else {
+                    // Actualizamos el hash local para que coincida con el éxito de Firebase
+                    userDao.updatePassword(localUser.id, hash, salt)
+                    localUser = userDao.getByIdOnce(localUser.id)
                 }
 
                 if (localUser != null) {
                     sessionManager.saveSession(localUser.id)
-                    AuthResult.Success(localUser.toDomain())
-                } else {
-                    AuthResult.Error("Error de sincronización local")
+                    return AuthResult.Success(localUser.toDomain())
                 }
-            } else {
-                AuthResult.Error("Error al obtener usuario de Firebase")
             }
         } catch (e: Exception) {
+            // Error de conexión o Firebase falló. Intentamos login local (Offline).
             e.printStackTrace()
-            AuthResult.Error("Correo o contraseña incorrectos")
+            
+            val localUser = userDao.findByEmail(normalizedEmail)
+            if (localUser != null && localUser.password.isNotBlank()) {
+                val isCorrect = PasswordHasher.verify(password, localUser.salt, localUser.password)
+                if (isCorrect) {
+                    sessionManager.saveSession(localUser.id)
+                    return AuthResult.Success(localUser.toDomain())
+                }
+            }
+            
+            // Si llegamos aquí, es que o no hay usuario local o la contraseña está mal
+            return AuthResult.Error("Credenciales incorrectas o sin conexión al servidor")
         }
+        
+        return AuthResult.Error("Error al iniciar sesión")
     }
 
     suspend fun loginWithGoogle(idToken: String): AuthResult {
